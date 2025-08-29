@@ -16,7 +16,7 @@ namespace PL.Controllers
 
         public IActionResult Index()
         {
-            return NotFound();
+            return Ok();
         }
     }
 }
