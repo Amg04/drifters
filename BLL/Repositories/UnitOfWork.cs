@@ -1,6 +1,9 @@
-﻿using BLLProject.Interfaces;
+﻿using BLL.Interfaces;
+using BLL.Repositories;
+using BLLProject.Interfaces;
 using DAL.Data;
 using DAL.Models;
+using Microsoft.EntityFrameworkCore;
 using System.Collections;
 namespace BLLProject.Repositories
 {
@@ -14,6 +17,8 @@ namespace BLLProject.Repositories
 
             this.dbContext = dbContext;
             _repository = new Hashtable();
+            Detections = new DetectionRepository(dbContext);
+            Cameras = new CameraRepository(dbContext);
 
         }
 
@@ -35,6 +40,16 @@ namespace BLLProject.Repositories
         public int Complete()
         {
             return dbContext.SaveChanges();
+        }
+
+
+
+        public IDetectionRepository Detections { get; }
+        public ICameraRepository Cameras { get; }
+
+        public async Task<int> SaveChangesAsync()
+        {
+            return await _context.SaveChangesAsync();
         }
 
 

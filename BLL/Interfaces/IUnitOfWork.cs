@@ -1,4 +1,5 @@
-﻿using DAL.Models;
+﻿using BLL.Interfaces;
+using DAL.Models;
 
 namespace BLLProject.Interfaces
 {
@@ -6,5 +7,8 @@ namespace BLLProject.Interfaces
     {
         IGenericRepository<T> Repository<T>() where T : BaseClass;
         int Complete();
+        IDetectionRepository Detections { get; }
+        ICameraRepository Cameras { get; }
+        Task<int> SaveChangesAsync();
     }
 }
