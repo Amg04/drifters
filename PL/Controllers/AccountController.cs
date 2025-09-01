@@ -39,6 +39,18 @@ namespace PL.Controllers
                 UserName = UserFromRequest.UserName,
             };
 
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+
+            string role;
+            if (User.IsInRole(SD.ManagerRole))
+            {
+                role = SD.ObserverRole;
+                appUser.ManagerId = userId;
+            }
+            else
+                role = SD.ManagerRole;
+
             IdentityResult result = await _userManager.CreateAsync(appUser, UserFromRequest.Password);
             if (!result.Succeeded)
             {
@@ -48,13 +60,6 @@ namespace PL.Controllers
                 }
                 return BadRequest(ModelState);
             }
-
-            string role;
-            if (User.IsInRole(SD.ManagerRole))
-                role = SD.ObserverRole;
-            else
-                role = SD.ManagerRole;
-
 
             bool roleExists = await _roleManager.RoleExistsAsync(role);
             if (!roleExists)

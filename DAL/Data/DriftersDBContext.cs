@@ -10,10 +10,8 @@ namespace DAL.Data
     {
         public DriftersDBContext(DbContextOptions<DriftersDBContext> options):base(options) { }
         public DriftersDBContext() { }
-
         protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder){ }
-
-        // DbSet Here
+        public DbSet<Camera> Cameras { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

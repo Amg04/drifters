@@ -8,6 +8,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using PL.Services.RtspPumpService;
+using PL.Services.RtspUrlBuilder;
 using System.Text;
 
 namespace PL
@@ -34,8 +36,26 @@ namespace PL
                .AddEntityFrameworkStores<DriftersDBContext>()
                .AddDefaultTokenProviders();
 
+
             builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
             builder.Services.AddScoped<IDBInitializer, DBInitializer>();
+
+            #region MyRegion
+
+            // review
+
+            builder.Services.AddSingleton<IRtspUrlBuilder, RtspUrlBuilder>();
+            builder.Services.AddHostedService<RtspPumpService>();
+
+            //builder.Services.AddCors(o =>
+            //{
+            //    o.AddPolicy("allow-client", p => p
+            //        .AllowAnyHeader()
+            //        .AllowAnyMethod()
+            //        .WithOrigins("http://localhost:3000", "http://your-flutter-app-origin")); // ÚÏøáåÇ
+            //});
+
+            #endregion
 
             builder.Services.AddAuthentication(Options =>
             {
@@ -98,27 +118,30 @@ namespace PL
 
             var app = builder.Build();
 
-            // Configure the HTTP request pipeline.
+            //Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
+                //app.UseSwagger();
+                //app.UseSwaggerUI();
+
                 app.UseSwagger();
-                app.UseSwaggerUI();
+                app.UseSwaggerUI(c =>
+                {
+                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Drifters API V1");
+                    // "launchUrl": "swagger" ßÏÉ ãÔ  "launchUrl": "" ÖíÝ ÇáÓØÑ ÏÉ áæ Çá 
+                    //c.RoutePrefix = string.Empty;
+                });
             }
 
             app.UseHttpsRedirection();
+            app.UseStaticFiles();
+            app.UseRouting();
 
+            //app.UseCors("allow-client");
             app.UseAuthentication();
             app.UseAuthorization();
 
             await SeedDatabaseAsync();
-
-            app.UseSwagger();
-
-            app.UseSwaggerUI(c =>
-            {
-                c.SwaggerEndpoint("/swagger/v1/swagger.json", "Drifters API V1");
-                c.RoutePrefix = string.Empty;
-            });
 
             app.MapControllers();
 
