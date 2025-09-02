@@ -19,4 +19,8 @@
     <ProjectReference Include="..\BLL\BLL.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Services\DetectionHubService\" />
+  </ItemGroup>
+
 </Project>

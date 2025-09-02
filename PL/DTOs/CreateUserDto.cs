@@ -12,9 +12,9 @@ namespace PL.DTOs
         [EmailAddress]
         [StringLength(256)]
         public string Email { get; set; }
-
         [Required]
-        [StringLength(100, MinimumLength = 6)]
+        [MinLength(8, ErrorMessage = "Password must be at least 8 characters long")]
+        [DataType(DataType.Password)]
         public string Password { get; set; } 
 
         [Phone]
@@ -24,10 +24,7 @@ namespace PL.DTOs
 
         public bool PhoneNumberConfirmed { get; set; }
 
-        public bool LockoutEnabled { get; set; }
-
         public string? Role { get; set; }
 
-        public string? ManagerId { get; set; }
     }
 }
