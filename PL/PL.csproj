@@ -7,6 +7,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Services\DetectionHubService\**" />
+    <Content Remove="Services\DetectionHubService\**" />
+    <EmbeddedResource Remove="Services\DetectionHubService\**" />
+    <None Remove="Services\DetectionHubService\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.19" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.19">
       <PrivateAssets>all</PrivateAssets>
@@ -17,10 +24,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\BLL\BLL.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Services\DetectionHubService\" />
   </ItemGroup>
 
 </Project>

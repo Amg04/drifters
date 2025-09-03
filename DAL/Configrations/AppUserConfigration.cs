@@ -12,6 +12,9 @@ namespace DAL.Configrations
            .WithMany(m => m.Subordinates)
            .HasForeignKey(u => u.ManagerId)
            .OnDelete(DeleteBehavior.Restrict);
+
+            builder.HasIndex(u => u.Email)
+                .IsUnique();
         }
     }
 }

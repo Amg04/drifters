@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using PL.Email;
 using PL.Services.RtspPumpService;
 using PL.Services.RtspUrlBuilder;
 using System.Text;
@@ -39,6 +40,9 @@ namespace PL
 
             builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
             builder.Services.AddScoped<IDBInitializer, DBInitializer>();
+
+            builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
+            builder.Services.AddTransient<IEmailSender, SmtpEmailSender>();
 
             #region MyRegion
 

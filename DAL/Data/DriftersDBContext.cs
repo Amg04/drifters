@@ -12,6 +12,7 @@ namespace DAL.Data
         public DriftersDBContext() { }
         protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder){ }
         public DbSet<Camera> Cameras { get; set; }
+        public DbSet<UserOtp> UserOtps { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

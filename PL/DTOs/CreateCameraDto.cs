@@ -1,6 +1,4 @@
-﻿using DAL;
-
-namespace PL.DTOs
+﻿namespace PL.DTOs
 {
     public class CreateCameraDto
     {
@@ -11,5 +9,8 @@ namespace PL.DTOs
         public string PasswordEnc { get; set; } = default!;
         public string RtspPath { get; set; } = default!;
         public bool Enabled { get; set; } = true;
+        public string SiteName { get; set; } = default!;
+        public string CameraLocation { get; set; } = default!;
+
     }
 }

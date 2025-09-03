@@ -52,6 +52,14 @@ namespace DAL.Configrations
                    .WithMany(u => u.Cameras) 
                    .HasForeignKey(c => c.UserId)
                    .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Property(c => c.SiteName)
+                  .IsRequired()
+                  .HasMaxLength(500);
+
+            builder.Property(c => c.CameraLocation)
+                  .IsRequired()
+                  .HasMaxLength(500);
         }
     }
 }

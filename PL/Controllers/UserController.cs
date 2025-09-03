@@ -159,24 +159,6 @@ namespace PL.Controllers
         }
 
         #endregion
-        #region ResetPassword
-
-        [HttpPost("{id}/reset-password")]
-        public async Task<IActionResult> ResetPassword(string id, [FromBody] ResetPasswordDto dto)
-        {
-            var user = await _userManager.FindByIdAsync(id);
-            if (user == null)
-                return NotFound();
-
-            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-            var result = await _userManager.ResetPasswordAsync(user, token, dto.NewPassword);
-
-            if (!result.Succeeded)
-                return BadRequest(result.Errors);
-
-            return Ok(new { Message = "Password reset successfully" });
-        }
-
-        #endregion
+        
     }
 }
