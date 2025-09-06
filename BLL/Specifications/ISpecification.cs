@@ -8,5 +8,7 @@ namespace BLLProject.Specifications
         public Expression<Func<T, bool>> Criteria { get; protected set; }
         public List<Expression<Func<T, object>>> Includes { get; protected set; }
         public List<Func<IQueryable<T>, IQueryable<T>>> ComplexIncludes { get; protected set; }
+        Expression<Func<T, object>> OrderBy { get; protected set; }
+        Expression<Func<T, object>> OrderByDescending { get; protected set; }
     }
 }

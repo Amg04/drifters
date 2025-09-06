@@ -4,6 +4,7 @@ using DAL.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DAL.Migrations
 {
     [DbContext(typeof(DriftersDBContext))]
-    partial class DriftersDBContextModelSnapshot : ModelSnapshot
+    [Migration("20250904091522_EditCameraTable")]
+    partial class EditCameraTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -128,9 +131,6 @@ namespace DAL.Migrations
                     b.Property<DateTime?>("LastHeartbeatUtc")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("MonitoredEntityId")
-                        .HasColumnType("int");
-
                     b.Property<string>("PasswordEnc")
                         .IsRequired()
                         .HasMaxLength(500)
@@ -151,6 +151,10 @@ namespace DAL.Migrations
                         .HasColumnType("nvarchar(50)")
                         .HasDefaultValue("Unknown");
 
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
                     b.Property<string>("Username")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -158,41 +162,9 @@ namespace DAL.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("MonitoredEntityId");
-
-                    b.ToTable("Cameras");
-                });
-
-            modelBuilder.Entity("DAL.Models.MonitoredEntity", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("EntityName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("EntityType")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<DateTime>("LastUpdate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("Id");
-
                     b.HasIndex("UserId");
 
-                    b.ToTable("MonitoredEntity");
+                    b.ToTable("Cameras");
                 });
 
             modelBuilder.Entity("DAL.Models.UserOtp", b =>
@@ -372,19 +344,8 @@ namespace DAL.Migrations
 
             modelBuilder.Entity("DAL.Models.Camera", b =>
                 {
-                    b.HasOne("DAL.Models.MonitoredEntity", "MonitoredEntity")
-                        .WithMany("Cameras")
-                        .HasForeignKey("MonitoredEntityId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("MonitoredEntity");
-                });
-
-            modelBuilder.Entity("DAL.Models.MonitoredEntity", b =>
-                {
                     b.HasOne("DAL.Models.AppUser", "User")
-                        .WithMany()
+                        .WithMany("Cameras")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -456,12 +417,9 @@ namespace DAL.Migrations
 
             modelBuilder.Entity("DAL.Models.AppUser", b =>
                 {
-                    b.Navigation("Subordinates");
-                });
-
-            modelBuilder.Entity("DAL.Models.MonitoredEntity", b =>
-                {
                     b.Navigation("Cameras");
+
+                    b.Navigation("Subordinates");
                 });
 #pragma warning restore 612, 618
         }

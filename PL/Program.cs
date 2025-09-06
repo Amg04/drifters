@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using PL.Email;
+using PL.Hubs;
 using PL.Services.RtspPumpService;
 using PL.Services.RtspUrlBuilder;
 using System.Text;
@@ -43,6 +44,7 @@ namespace PL
 
             builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
             builder.Services.AddTransient<IEmailSender, SmtpEmailSender>();
+            builder.Services.AddSignalR();
 
             #region MyRegion
 
@@ -144,7 +146,8 @@ namespace PL
             //app.UseCors("allow-client");
             app.UseAuthentication();
             app.UseAuthorization();
-
+            
+            app.MapHub<CameraHub>("/cameraHub");
             await SeedDatabaseAsync();
 
             app.MapControllers();

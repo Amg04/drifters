@@ -14,6 +14,12 @@ namespace BLLProject.Specifications
                 query = spec.Includes.Aggregate(query, (Current, IncludeExpression) => Current.Include(IncludeExpression));
             if (spec.ComplexIncludes?.Any() == true)
                 query = spec.ComplexIncludes.Aggregate(query, (current, includeQuery) => includeQuery(current));
+
+            if (spec.OrderBy != null)
+                query = query.OrderBy(spec.OrderBy);
+            else if (spec.OrderByDescending != null)
+                query = query.OrderByDescending(spec.OrderByDescending);
+
             return query;
         }
     }

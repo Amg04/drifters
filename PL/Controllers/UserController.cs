@@ -1,11 +1,9 @@
-﻿using Microsoft.AspNetCore.Http;
-using BLLProject.Interfaces;
+﻿using BLLProject.Interfaces;
 using DAL.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using PL.DTOs;
-using System.Security.Claims;
 using Utilities;
 
 namespace PL.Controllers
@@ -27,46 +25,6 @@ namespace PL.Controllers
             _roleManager = roleManager;
         }
 
-        #region Create
-
-        [HttpPost]
-        public async Task<IActionResult> Create([FromBody] CreateUserDto dto)
-        {
-            var existingUser = await _userManager.FindByEmailAsync(dto.Email);
-            if (existingUser != null)
-                return BadRequest("User with this email already exists.");
-
-            var existingUserByName = await _userManager.FindByNameAsync(dto.UserName);
-            if (existingUserByName != null)
-                return BadRequest("User with this username already exists.");
-
-            var user = new AppUser
-            {
-                UserName = dto.UserName,
-                Email = dto.Email,
-                EmailConfirmed = dto.EmailConfirmed,
-                PhoneNumber = dto.PhoneNumber,
-                PhoneNumberConfirmed = dto.PhoneNumberConfirmed
-            };
-
-            var result = await _userManager.CreateAsync(user, dto.Password);
-            if (!result.Succeeded)
-                return BadRequest(result.Errors);
-
-            if (!string.IsNullOrEmpty(dto.Role))
-            {
-                var roleExists = await _roleManager.RoleExistsAsync(dto.Role);
-                if (!roleExists)
-                    return BadRequest($"Role '{dto.Role}' does not exist.");
-
-                await _userManager.AddToRoleAsync(user, dto.Role);
-            }
-
-            return CreatedAtAction(nameof(GetById), new { id = user.Id }, new { user.Id });
-        }
-
-        #endregion
-
         #region GetById
 
         [Authorize]
@@ -82,8 +40,6 @@ namespace PL.Controllers
                 user.Id,
                 user.UserName,
                 user.Email,
-                user.PhoneNumber,
-                user.EmailConfirmed
             });
         }
 

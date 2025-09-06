@@ -1,16 +1,21 @@
-﻿namespace PL.DTOs
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace PL.DTOs
 {
     public class CreateCameraDto
     {
-        public string Name { get; set; } = default!;
+        [Required]
         public string Host { get; set; } = default!;
+        [Required]
         public int Port { get; set; } = 554;
+        [Required]
         public string Username { get; set; } = default!;
+        [Required]
         public string PasswordEnc { get; set; } = default!;
+        [Required]
         public string RtspPath { get; set; } = default!;
         public bool Enabled { get; set; } = true;
-        public string SiteName { get; set; } = default!;
+        [Required]
         public string CameraLocation { get; set; } = default!;
-
     }
 }

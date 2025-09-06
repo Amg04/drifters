@@ -10,10 +10,6 @@ namespace DAL.Configrations
         {
             builder.HasKey(c => c.Id);
 
-            builder.Property(c => c.Name)
-                   .IsRequired()
-                   .HasMaxLength(200);
-
             builder.Property(c => c.Host)
                    .IsRequired()
                    .HasMaxLength(200);
@@ -43,23 +39,19 @@ namespace DAL.Configrations
                    .HasDefaultValue("Unknown");
 
             builder.Property(c => c.LastHeartbeatUtc)
-                   .HasColumnType("datetime2");
-
-            builder.Property(c => c.UserId)
-                   .IsRequired();
-
-            builder.HasOne(c => c.User)
-                   .WithMany(u => u.Cameras) 
-                   .HasForeignKey(c => c.UserId)
-                   .OnDelete(DeleteBehavior.Cascade);
-
-            builder.Property(c => c.SiteName)
-                  .IsRequired()
-                  .HasMaxLength(500);
+                   .HasColumnType("datetime2");          
 
             builder.Property(c => c.CameraLocation)
                   .IsRequired()
                   .HasMaxLength(500);
+
+            builder.Property(c => c.MonitoredEntityId)
+                 .IsRequired();
+
+            builder.HasOne(c => c.MonitoredEntity)
+                .WithMany(m => m.Cameras)
+                .HasForeignKey(c => c.MonitoredEntityId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

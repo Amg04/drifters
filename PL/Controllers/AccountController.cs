@@ -1,5 +1,4 @@
 ﻿using BLLProject.Interfaces;
-using BLLProject.Specifications;
 using DAL.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -39,6 +38,7 @@ namespace PL.Controllers
             _unitOfWork = unitOfWork;
         }
 
+  
         #region Register
 
         [HttpPost("Register")]
@@ -93,8 +93,51 @@ namespace PL.Controllers
                 return BadRequest("Failed to assign role to user.");
             }
 
-            await _signIn.SignInAsync(appUser, isPersistent: false);
-            return Ok(new { message = "User Created Successfully", User = appUser.UserName });
+            var token = await _userManager.GenerateEmailConfirmationTokenAsync(appUser);
+            
+            var confirmationLink = Url.Action(nameof(ConfirmEmail), "Account",
+                new { userId = appUser.Id, token = token }, Request.Scheme);
+
+            var emailBody = $@"
+            <div style='font-family: Arial, sans-serif; font-size: 16px; color: #333;'>
+                <h2>Welcome to Our Service!</h2>
+                <p>Thank you for registering. Please confirm your email address by clicking the button below:</p>
+                <a href='{confirmationLink}'
+                   style='display: inline-block; padding: 12px 24px; margin: 20px 0;
+                          font-size: 16px; color: white; background-color: #007bff;
+                          text-decoration: none; border-radius: 5px;'>
+                    Confirm Email
+                </a>
+                <p>If you did not create this account, please ignore this email.</p>
+                <hr style='border:none; border-top:1px solid #eee;'/>
+                <p style='font-size: 12px; color: #999;'>© {DateTime.UtcNow.Year} Your Company. All rights reserved.</p>
+            </div>";
+
+            if (!string.IsNullOrEmpty(appUser.Email))
+                await _emailSender.SendEmailAsync(appUser.Email, "Confirm your email", emailBody);
+
+            return Ok(new { message = "User registered successfully. Please check your email to confirm the account.", User = appUser.UserName });
+        }
+
+        #endregion
+
+        #region ConfirmEmail
+
+        [HttpGet("ConfirmEmail")]
+        public async Task<IActionResult> ConfirmEmail(string userId, string token)
+        {
+            if (userId == null || token == null)
+                return BadRequest("Invalid Email confirmation request.");
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+                return NotFound("User not found.");
+
+            var result = await _userManager.ConfirmEmailAsync(user, token);
+            if (result.Succeeded)
+                return Ok("Email confirmed successfully. You can now log in.");
+            else
+                return BadRequest("Email confirmation failed.");
         }
 
         #endregion
@@ -110,44 +153,19 @@ namespace PL.Controllers
                 return Unauthorized(new { message = "Invalid Email or Password" });
             }
 
-            var otp = await GenerateAndSendOtp(UserFromDB);
-
-            return Ok(new { message = "OTP sent to your email, please verify." });
-        }
-
-        #endregion
-
-        #region VerifyOtp
-
-
-        [HttpPost("VerifyOtp")]
-        public async Task<IActionResult> VerifyOtp(OtpVerificationDTO otpDto)
-        {
-            var user = await _userManager.FindByNameAsync(otpDto.UserName);
-            if (user == null)
-                return Unauthorized(new { message = "Invalid User" });
-
-          var spec = new BaseSpecification<UserOtp>(o => o.UserId == user.Id
-                             && o.OtpCode == otpDto.Otp
-                             && !o.IsUsed
-                             && o.ExpirationTime > DateTime.UtcNow);
-            var userOtp = _unitOfWork.Repository<UserOtp>().GetEntityWithSpec(spec);
-
-            bool isOtpValid = true;
-            if (userOtp == null)
-                isOtpValid = false;
-
-            if (!isOtpValid)
-                return Unauthorized(new { message = "Invalid OTP" });
+            if (!await _userManager.IsEmailConfirmedAsync(UserFromDB))
+            {
+                return Unauthorized(new { message = "Email not confirmed yet. Please confirm your email." });
+            }
 
             // Generate JWT token after successful OTP verification
             var userClaims = new List<Claim>
             {
-                new Claim(ClaimTypes.NameIdentifier, user.Id),
-                new Claim(ClaimTypes.Name, user.UserName),
+                new Claim(ClaimTypes.NameIdentifier, UserFromDB.Id),
+                new Claim(ClaimTypes.Name, UserFromDB.UserName),
             };
 
-            var UserRoles = await _userManager.GetRolesAsync(user);
+            var UserRoles = await _userManager.GetRolesAsync(UserFromDB);
             userClaims.AddRange(UserRoles.Select(role => new Claim(ClaimTypes.Role, role)));
             userClaims.Add(new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()));
 
@@ -209,7 +227,7 @@ namespace PL.Controllers
 
         #region ResetPasswordConfirm
 
-        [HttpPost("reset-password-confirm")]
+        [HttpPost("ResetPasswordConfirm")]
         public async Task<IActionResult> ResetPasswordConfirm([FromBody] ResetPasswordDTO model)
         {
             var user = await _userManager.FindByEmailAsync(model.Email);
@@ -229,35 +247,6 @@ namespace PL.Controllers
             }
 
             return Ok(new { Message = "Password has been reset successfully." });
-        }
-
-        #endregion
-
-        #region Method
-
-        private async Task<string?> GenerateAndSendOtp(AppUser user)
-        {
-            var otp = new Random().Next(1000, 9999).ToString();
-
-          var userOtp = new UserOtp
-            {
-                UserId = user.Id,
-                OtpCode = otp,
-                ExpirationTime = DateTime.UtcNow.AddMinutes(5),
-                IsUsed = false
-            };
-
-            _unitOfWork.Repository<UserOtp>().Add(userOtp);
-            _unitOfWork.Complete();
-
-            if (!string.IsNullOrEmpty(user.Email))
-            {
-                var emailBody = $"Your OTP code is: {otp}. It expires in 5 minutes.";
-                await _emailSender.SendEmailAsync(user.Email, "Your OTP Code", emailBody);
-                return otp;
-            }
-
-            return null;
         }
 
         #endregion

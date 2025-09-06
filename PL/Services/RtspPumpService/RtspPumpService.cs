@@ -1,6 +1,8 @@
 ﻿using DAL.Data;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using PL.Hubs;
 using PL.Services.RtspUrlBuilder;
 using System.Collections.Concurrent;
 using System.Diagnostics;
@@ -11,13 +13,15 @@ namespace PL.Services.RtspPumpService
     {
         private readonly IServiceProvider _sp;
         private readonly IRtspUrlBuilder _urlBuilder;
+        private readonly IHubContext<CameraHub> _hubContext;
         private readonly ConcurrentDictionary<int, Process> _procs = new();
 
-        public RtspPumpService(IServiceProvider sp, 
-            IRtspUrlBuilder urlBuilder)
+        public RtspPumpService(IServiceProvider sp,IRtspUrlBuilder urlBuilder
+            , IHubContext<CameraHub> hubContext)
         {
             _sp = sp;
             _urlBuilder = urlBuilder;
+            _hubContext = hubContext;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -68,6 +72,16 @@ namespace PL.Services.RtspPumpService
                 cam.Status = "Starting";
                 cam.LastHeartbeatUtc = DateTime.UtcNow;
                 await db.SaveChangesAsync(token);
+
+                await _hubContext.Clients.All.SendAsync("NewHlsStreamAvailable", new { cam.Id, cam.HlsPublicUrl });
+                //// إرسال لمدير الكاميرا
+                //await _hubContext.Clients.Group(managerUserId).SendAsync("NewHlsStreamAvailable", new { cam.Id, cam.HlsPublicUrl });
+
+                //// إذا عندك معرف المراقب (Observer)
+                //await _hubContext.Clients.Group(observerUserId).SendAsync("NewHlsStreamAvailable", new { cam.Id, cam.HlsPublicUrl });
+
+
+
 
                 var pwd = protector.Unprotect(cam.PasswordEnc);
                 var rtsp = _urlBuilder.Build(cam, pwd);

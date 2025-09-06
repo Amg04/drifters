@@ -26,4 +26,8 @@
     <ProjectReference Include="..\BLL\BLL.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="wwwroot\streams\" />
+  </ItemGroup>
+
 </Project>

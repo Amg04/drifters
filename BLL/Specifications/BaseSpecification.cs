@@ -9,6 +9,8 @@ namespace BLLProject.Specifications
         public List<Expression<Func<T, object>>> Includes { get; set; } = new
             List<Expression<Func<T, object>>>();
         public List<Func<IQueryable<T>, IQueryable<T>>> ComplexIncludes { get; set; } = new();
+        public Expression<Func<T, object>> OrderBy { get; set; }
+        public Expression<Func<T, object>> OrderByDescending { get; set; }
         public BaseSpecification()
         {
 
@@ -24,6 +26,16 @@ namespace BLLProject.Specifications
             Criteria = criteriaExpression;
             ComplexIncludes.Add(includeQuery);
         }
+
+        public void AddOrderBy(Expression<Func<T, object>> orderByExpression)
+        {
+            OrderBy = orderByExpression;
+        }
+        public void AddOrderByDescending(Expression<Func<T, object>> orderByDescExpression)
+        {
+            OrderByDescending = orderByDescExpression;
+        }
+
     }
 
 }
