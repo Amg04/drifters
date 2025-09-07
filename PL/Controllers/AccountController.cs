@@ -6,6 +6,7 @@ using Microsoft.IdentityModel.Tokens;
 using PL.DTOs;
 using PL.Email;
 using System.IdentityModel.Tokens.Jwt;
+using System.Net;
 using System.Security.Claims;
 using System.Text;
 using Utilities;
@@ -235,8 +236,8 @@ namespace PL.Controllers
             {
                 return NotFound(new { Message = "User not found." });
             }
-
-            var resetPassResult = await _userManager.ResetPasswordAsync(user, model.Token, model.Password);
+            var decodedToken = WebUtility.UrlDecode(model.Token);
+            var resetPassResult = await _userManager.ResetPasswordAsync(user, decodedToken, model.Password);
             if (!resetPassResult.Succeeded)
             {
                 foreach (var error in resetPassResult.Errors)

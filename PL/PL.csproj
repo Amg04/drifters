@@ -8,9 +8,13 @@
 
   <ItemGroup>
     <Compile Remove="Services\DetectionHubService\**" />
+    <Compile Remove="wwwroot\**" />
     <Content Remove="Services\DetectionHubService\**" />
+    <Content Remove="wwwroot\**" />
     <EmbeddedResource Remove="Services\DetectionHubService\**" />
+    <EmbeddedResource Remove="wwwroot\**" />
     <None Remove="Services\DetectionHubService\**" />
+    <None Remove="wwwroot\**" />
   </ItemGroup>
 
   <ItemGroup>
@@ -24,10 +28,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\BLL\BLL.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="wwwroot\streams\" />
   </ItemGroup>
 
 </Project>
