@@ -1,7 +1,5 @@
-﻿using DAL.Models;
+﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
-using System;
-using System.Diagnostics.Metrics;
 
 #nullable disable
 
@@ -19,7 +17,6 @@ namespace DAL.Migrations
                 type: "datetime2",
                 nullable: false,
                 defaultValue: new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified));
-           
         }
 
         /// <inheritdoc />

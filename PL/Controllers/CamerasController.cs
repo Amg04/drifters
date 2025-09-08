@@ -34,18 +34,7 @@ namespace PL.Controllers
 
             var monitoredFromDb = _unitOfWork.Repository<MonitoredEntity>()
                 .GetEntityWithSpec(new BaseSpecification<MonitoredEntity>(m => m.UserId == userId));
-            if (monitoredFromDb == null)
-            {
-                // Auto-create a default monitored entity
-                monitoredFromDb = new MonitoredEntity
-                {
-                    UserId = userId,
-                    EntityName = "Default Monitoring",
-                    LastUpdate = DateTime.UtcNow
-                };
-                _unitOfWork.Repository<MonitoredEntity>().Add(monitoredFromDb);
-                _unitOfWork.Complete();
-            }
+
             var cam = new Camera
             {
                 Host = dto.Host,
