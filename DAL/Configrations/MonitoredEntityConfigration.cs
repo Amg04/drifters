@@ -20,6 +20,9 @@ namespace DAL.Configrations
                 .IsRequired()
                 .HasMaxLength(100);
 
+            builder.Property(c => c.Location)
+                .HasMaxLength(100);
+
             builder.Property(c => c.UserId)
                    .IsRequired();
 

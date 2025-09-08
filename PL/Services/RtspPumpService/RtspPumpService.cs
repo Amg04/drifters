@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
 using PL.Hubs;
 using PL.Services.RtspUrlBuilder;
 using System.Collections.Concurrent;
@@ -14,14 +15,16 @@ namespace PL.Services.RtspPumpService
         private readonly IServiceProvider _sp;
         private readonly IRtspUrlBuilder _urlBuilder;
         private readonly IHubContext<CameraHub> _hubContext;
+        private readonly IWebHostEnvironment _hostEnvironment;
         private readonly ConcurrentDictionary<int, Process> _procs = new();
 
         public RtspPumpService(IServiceProvider sp,IRtspUrlBuilder urlBuilder
-            , IHubContext<CameraHub> hubContext)
+            , IHubContext<CameraHub> hubContext, IWebHostEnvironment hostEnvironment)
         {
             _sp = sp;
             _urlBuilder = urlBuilder;
             _hubContext = hubContext;
+            _hostEnvironment = hostEnvironment;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -59,12 +62,21 @@ namespace PL.Services.RtspPumpService
             {
                 using var scope = _sp.CreateScope();
                 var db = scope.ServiceProvider.GetRequiredService<DriftersDBContext>();
-                var protector = scope.ServiceProvider.GetRequiredService<IDataProtector>();
+                
+                var provider = scope.ServiceProvider.GetRequiredService<IDataProtectionProvider>();
+                var protector = provider.CreateProtector("purpose-string");
 
-                var cam = await db.Cameras.FindAsync(new object?[] { cameraId }, token);
+
+
+
+                var cam = await db.Cameras
+                    .Include(c => c.MonitoredEntity)
+                    .FirstOrDefaultAsync(c => c.Id == cameraId, token);
+
                 if (cam == null || !cam.Enabled) return;
 
-                var outputDir = Path.Combine("wwwroot", "streams", cam.Id.ToString());
+                var webRootPath = _hostEnvironment.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+                var outputDir = Path.Combine(webRootPath, "api", "streams", cam.Id.ToString());
                 Directory.CreateDirectory(outputDir);
                 var hlsFile = Path.Combine(outputDir, "index.m3u8");
                 cam.HlsLocalPath = hlsFile;
@@ -72,16 +84,18 @@ namespace PL.Services.RtspPumpService
                 cam.Status = "Starting";
                 cam.LastHeartbeatUtc = DateTime.UtcNow;
                 await db.SaveChangesAsync(token);
-
-                await _hubContext.Clients.All.SendAsync("NewHlsStreamAvailable", new { cam.Id, cam.HlsPublicUrl });
-                //// إرسال لمدير الكاميرا
-                //await _hubContext.Clients.Group(managerUserId).SendAsync("NewHlsStreamAvailable", new { cam.Id, cam.HlsPublicUrl });
-
-                //// إذا عندك معرف المراقب (Observer)
-                //await _hubContext.Clients.Group(observerUserId).SendAsync("NewHlsStreamAvailable", new { cam.Id, cam.HlsPublicUrl });
-
-
-
+                
+                var managerUserId = cam.MonitoredEntity?.UserId;
+                if (managerUserId != null)
+                {
+                    string groupName = $"Group_{managerUserId}";
+                    await _hubContext.Clients.Group(groupName)
+                        .SendAsync("NewHlsStreamAvailable", new { cam.Id, cam.HlsPublicUrl });
+                }
+                else
+                {
+                    await _hubContext.Clients.All.SendAsync("NewHlsStreamAvailable", new { cam.Id, cam.HlsPublicUrl });
+                }
 
                 var pwd = protector.Unprotect(cam.PasswordEnc);
                 var rtsp = _urlBuilder.Build(cam, pwd);

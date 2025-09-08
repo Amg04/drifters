@@ -45,23 +45,11 @@ namespace PL
             builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
             builder.Services.AddTransient<IEmailSender, SmtpEmailSender>();
             builder.Services.AddSignalR();
-
-            #region MyRegion
-
-            // review
-
             builder.Services.AddSingleton<IRtspUrlBuilder, RtspUrlBuilder>();
             builder.Services.AddHostedService<RtspPumpService>();
 
-            //builder.Services.AddCors(o =>
-            //{
-            //    o.AddPolicy("allow-client", p => p
-            //        .AllowAnyHeader()
-            //        .AllowAnyMethod()
-            //        .WithOrigins("http://localhost:3000", "http://your-flutter-app-origin")); // ⁄œ¯·Â«
-            //});
+            builder.Services.AddDataProtection();
 
-            #endregion
 
             builder.Services.AddAuthentication(Options =>
             {
@@ -125,8 +113,8 @@ namespace PL
             var app = builder.Build();
 
             //Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment())
-            {
+            //if (app.Environment.IsDevelopment())
+            //{
                 //app.UseSwagger();
                 //app.UseSwaggerUI();
 
@@ -137,13 +125,12 @@ namespace PL
                     // "launchUrl": "swagger" ﬂœ… „‘  "launchUrl": "" ÷Ì› «·”ÿ— œ… ·Ê «· 
                     //c.RoutePrefix = string.Empty;
                 });
-            }
+            //}
 
             app.UseHttpsRedirection();
             app.UseStaticFiles();
             app.UseRouting();
 
-            //app.UseCors("allow-client");
             app.UseAuthentication();
             app.UseAuthorization();
             
@@ -165,3 +152,7 @@ namespace PL
         }
     }
 }
+
+//"CS": "Server=.;Database=Drifters;Integrated Security=True;Encrypt=True;TrustServerCertificate=True;MultipleActiveResultSets = True"
+
+//"Server=db26872.public.databaseasp.net;Database=db26872;User Id=db26872;Password=fN!5B=2g4a%X;Encrypt=False;MultipleActiveResultSets=True;"

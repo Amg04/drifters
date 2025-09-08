@@ -35,6 +35,9 @@ namespace DAL.Migrations
                 columns: table => new
                 {
                     Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    ImgUrl = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    ManagerId = table.Column<string>(type: "nvarchar(450)", nullable: true),
                     UserName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
                     NormalizedUserName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
                     Email = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
@@ -53,6 +56,13 @@ namespace DAL.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Users", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Users_Users_ManagerId",
+                        column: x => x.ManagerId,
+                        principalSchema: "Security",
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -74,6 +84,30 @@ namespace DAL.Migrations
                         column: x => x.RoleId,
                         principalSchema: "Security",
                         principalTable: "Roles",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "MonitoredEntities",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    EntityType = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    EntityName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    Location = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    LastUpdate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UserId = table.Column<string>(type: "nvarchar(450)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_MonitoredEntities", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_MonitoredEntities_Users_UserId",
+                        column: x => x.UserId,
+                        principalSchema: "Security",
+                        principalTable: "Users",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -172,6 +206,46 @@ namespace DAL.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "Cameras",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Host = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    Port = table.Column<int>(type: "int", nullable: false),
+                    Username = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    RtspPath = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    PasswordEnc = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    Enabled = table.Column<bool>(type: "bit", nullable: false),
+                    CameraLocation = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    HlsPublicUrl = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    HlsLocalPath = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    Status = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false, defaultValue: "Unknown"),
+                    LastHeartbeatUtc = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    MonitoredEntityId = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Cameras", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Cameras_MonitoredEntities_MonitoredEntityId",
+                        column: x => x.MonitoredEntityId,
+                        principalTable: "MonitoredEntities",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Cameras_MonitoredEntityId",
+                table: "Cameras",
+                column: "MonitoredEntityId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MonitoredEntities_UserId",
+                table: "MonitoredEntities",
+                column: "UserId");
+
             migrationBuilder.CreateIndex(
                 name: "IX_RoleClaims_RoleId",
                 schema: "Security",
@@ -211,6 +285,20 @@ namespace DAL.Migrations
                 column: "NormalizedEmail");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Users_Email",
+                schema: "Security",
+                table: "Users",
+                column: "Email",
+                unique: true,
+                filter: "[Email] IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Users_ManagerId",
+                schema: "Security",
+                table: "Users",
+                column: "ManagerId");
+
+            migrationBuilder.CreateIndex(
                 name: "UserNameIndex",
                 schema: "Security",
                 table: "Users",
@@ -222,6 +310,9 @@ namespace DAL.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "Cameras");
+
             migrationBuilder.DropTable(
                 name: "RoleClaims",
                 schema: "Security");
@@ -241,6 +332,9 @@ namespace DAL.Migrations
             migrationBuilder.DropTable(
                 name: "UserTokens",
                 schema: "Security");
+
+            migrationBuilder.DropTable(
+                name: "MonitoredEntities");
 
             migrationBuilder.DropTable(
                 name: "Roles",

@@ -1,5 +1,6 @@
 ﻿using BLLProject.Interfaces;
 using DAL.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
@@ -28,7 +29,8 @@ namespace PL.Controllers
             IConfiguration configuration,
             SignInManager<AppUser> SignIn,
             IEmailSender emailSender,
-            IUnitOfWork unitOfWork)
+            IUnitOfWork unitOfWork
+            )
         {
             _roleManager = roleManager;
             _userManager = userManager;
@@ -150,7 +152,7 @@ namespace PL.Controllers
             AppUser? UserFromDB = await _userManager.FindByNameAsync(UserFromRequest.UserName);
             if (UserFromDB == null || !await _userManager.CheckPasswordAsync(UserFromDB, UserFromRequest.Password))
             {
-                return Unauthorized(new { message = "Invalid Email or Password" });
+                return Unauthorized(new { message = "Invalid UserName or Password" });
             }
 
             if (!await _userManager.IsEmailConfirmedAsync(UserFromDB))
@@ -158,7 +160,6 @@ namespace PL.Controllers
                 return Unauthorized(new { message = "Email not confirmed yet. Please confirm your email." });
             }
 
-            // Generate JWT token after successful OTP verification
             var userClaims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, UserFromDB.Id),
@@ -188,9 +189,22 @@ namespace PL.Controllers
 
         #endregion
 
+        #region Logout
+
+        [HttpPost("Logout")]
+        [Authorize]
+        public async Task<IActionResult> Logout()
+        {
+            await _signIn.SignOutAsync();
+            return Ok(new { message = "User logged out successfully." });
+        }
+
+
+        #endregion
+
         #region ResetPassword
 
-        [HttpPost("reset-password")]
+        [HttpPost("ResetPassword")]
         public async Task<IActionResult> ResetPassword(string Email)
         {
             var user = await _userManager.FindByEmailAsync(Email);
@@ -236,7 +250,8 @@ namespace PL.Controllers
                 return NotFound(new { Message = "User not found." });
             }
 
-            var resetPassResult = await _userManager.ResetPasswordAsync(user, model.Token, model.Password);
+            string decodedToken = System.Net.WebUtility.UrlDecode(model.Token);
+            var resetPassResult = await _userManager.ResetPasswordAsync(user, decodedToken, model.Password);
             if (!resetPassResult.Succeeded)
             {
                 foreach (var error in resetPassResult.Errors)
@@ -250,6 +265,5 @@ namespace PL.Controllers
         }
 
         #endregion
-
     }
 }

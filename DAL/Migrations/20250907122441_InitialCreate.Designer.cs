@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DAL.Migrations
 {
     [DbContext(typeof(DriftersDBContext))]
-    [Migration("20250903180933_AddSiteNameCameraLocationInCameraTable")]
-    partial class AddSiteNameCameraLocationInCameraTable
+    [Migration("20250907122441_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -44,6 +44,10 @@ namespace DAL.Migrations
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("bit");
 
+                    b.Property<string>("ImgUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("bit");
 
@@ -52,6 +56,10 @@ namespace DAL.Migrations
 
                     b.Property<string>("ManagerId")
                         .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Name")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
                     b.Property<string>("NormalizedEmail")
                         .HasMaxLength(256)
@@ -109,7 +117,8 @@ namespace DAL.Migrations
 
                     b.Property<string>("CameraLocation")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<bool>("Enabled")
                         .HasColumnType("bit");
@@ -130,10 +139,8 @@ namespace DAL.Migrations
                     b.Property<DateTime?>("LastHeartbeatUtc")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                    b.Property<int>("MonitoredEntityId")
+                        .HasColumnType("int");
 
                     b.Property<string>("PasswordEnc")
                         .IsRequired()
@@ -148,20 +155,12 @@ namespace DAL.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
-                    b.Property<string>("SiteName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("Status")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)")
                         .HasDefaultValue("Unknown");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("Username")
                         .IsRequired()
@@ -170,9 +169,45 @@ namespace DAL.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("MonitoredEntityId");
 
                     b.ToTable("Cameras");
+                });
+
+            modelBuilder.Entity("DAL.Models.MonitoredEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("EntityName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("EntityType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("LastUpdate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Location")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("MonitoredEntities");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -320,8 +355,19 @@ namespace DAL.Migrations
 
             modelBuilder.Entity("DAL.Models.Camera", b =>
                 {
-                    b.HasOne("DAL.Models.AppUser", "User")
+                    b.HasOne("DAL.Models.MonitoredEntity", "MonitoredEntity")
                         .WithMany("Cameras")
+                        .HasForeignKey("MonitoredEntityId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("MonitoredEntity");
+                });
+
+            modelBuilder.Entity("DAL.Models.MonitoredEntity", b =>
+                {
+                    b.HasOne("DAL.Models.AppUser", "User")
+                        .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -382,9 +428,12 @@ namespace DAL.Migrations
 
             modelBuilder.Entity("DAL.Models.AppUser", b =>
                 {
-                    b.Navigation("Cameras");
-
                     b.Navigation("Subordinates");
+                });
+
+            modelBuilder.Entity("DAL.Models.MonitoredEntity", b =>
+                {
+                    b.Navigation("Cameras");
                 });
 #pragma warning restore 612, 618
         }

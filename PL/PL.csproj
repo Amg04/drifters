@@ -27,7 +27,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="wwwroot\streams\" />
+    <Folder Include="wwwroot\api\uploads\" />
   </ItemGroup>
 
 </Project>

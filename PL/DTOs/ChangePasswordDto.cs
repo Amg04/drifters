@@ -2,11 +2,13 @@
 
 namespace PL.DTOs
 {
-
     public class ChangePasswordDto
     {
         [Required]
-        [StringLength(100, MinimumLength = 6)]
-        public string NewPassword { get; set; } = string.Empty;
+        [DataType(DataType.Password)]
+        public string CurrentPassword { get; set; }
+        [Required]
+        [DataType(DataType.Password)]
+        public string NewPassword { get; set; }
     }
 }

@@ -1,10 +1,11 @@
 ﻿using BLLProject.Interfaces;
+using BLLProject.Specifications;
 using DAL.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using PL.DTOs;
-using Utilities;
+using System.Security.Claims;
 
 namespace PL.Controllers
 {
@@ -12,109 +13,116 @@ namespace PL.Controllers
     [Route("api/[controller]")]
     public class UserController : ControllerBase
     {
-        private readonly IUnitOfWork _unitOfWork;
         private readonly UserManager<AppUser> _userManager;
-        private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly IWebHostEnvironment _hostEnvironment;
 
-        public UserController(IUnitOfWork unitOfWork,
-            UserManager<AppUser> userManager,
-            RoleManager<IdentityRole> roleManager)
+        public UserController(UserManager<AppUser> userManager, IUnitOfWork unitOfWork, IWebHostEnvironment hostEnvironment)
         {
-            _unitOfWork = unitOfWork;
             _userManager = userManager;
-            _roleManager = roleManager;
+           _unitOfWork = unitOfWork;
+            this._hostEnvironment = hostEnvironment;
         }
 
-        #region GetById
+        #region GetProfile
 
         [Authorize]
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetById(string id)
+        [HttpGet("Profile")]
+        public async Task<IActionResult> GetProfile()
         {
-            var user = await _userManager.FindByIdAsync(id);
-            if (user == null)
-                return NotFound();
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null)
+                return Unauthorized("User ID not found in token");
+            var user = await _userManager.FindByIdAsync(userId);
+            var roles = await _userManager.GetRolesAsync(user);
+            var role = roles.FirstOrDefault();
 
-            return Ok(new
+            var spec = new BaseSpecification<MonitoredEntity>(m => m.UserId == user.Id);
+            spec.AddOrderByDescending(m => m.LastUpdate);
+            var latestMonitored = _unitOfWork.Repository<MonitoredEntity>().GetEntityWithSpec(spec);
+
+            var UpdateProfileDto = new UpdateProfileDto()
             {
-                user.Id,
-                user.UserName,
-                user.Email,
-            });
+                ImageUrl = user.ImgUrl,
+                Role = role,
+                Name = user.Name,
+                Email = user.Email,
+                PhoneNumber = user.PhoneNumber,
+                Company = latestMonitored?.EntityName,
+                Location = latestMonitored?.Location
+            };
+
+            return Ok(UpdateProfileDto);
         }
 
         #endregion
 
-        #region GetAll
-        [Authorize]
-        [HttpGet]
-        public async Task<IActionResult> GetAll()
-        {
-            var users = _userManager.Users.ToList();
-            var userDtos = new List<object>();
+        #region EditProfile
 
-            foreach (var user in users)
+        [Authorize]
+        [HttpPut("profile")]
+        public async Task<IActionResult> EditProfile([FromForm] UpdateProfileDto dto, IFormFile? imageFile)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null)
+                return Unauthorized("User ID not found in token");
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+                return NotFound();
+
+            if (imageFile != null)
             {
-                var roles = await _userManager.GetRolesAsync(user);
-                userDtos.Add(new
-                {
-                    user.Id,
-                    user.UserName,
-                    user.Email,
-                    user.PhoneNumber,
-                    Roles = roles
-                });
+                if (!string.IsNullOrEmpty(user.ImgUrl))
+                    ImageHelper.DeleteImage(user.ImgUrl, _hostEnvironment);
+
+                user.ImgUrl = ImageHelper.SaveImage(imageFile, _hostEnvironment);
             }
 
-            return Ok(userDtos);
-        }
+            var spec = new BaseSpecification<MonitoredEntity>(m => m.UserId == user.Id);
+            spec.AddOrderByDescending(m => m.LastUpdate);
+            var latestMonitored = _unitOfWork.Repository<MonitoredEntity>().GetEntityWithSpec(spec);
 
-        #endregion
-
-        #region Update
-
-        [HttpPut("{id}")]
-        public async Task<IActionResult> Update(string id, [FromBody] UpdateUserDto dto)
-        {
-            var user = await _userManager.FindByIdAsync(id);
-            if (user == null)
-                return NotFound();
-
+            user.Name = dto.Name;
             if (!string.IsNullOrEmpty(dto.Email))
                 user.Email = dto.Email;
-            if (!string.IsNullOrEmpty(dto.UserName))
-                user.UserName = dto.UserName;
-            if (!string.IsNullOrEmpty(dto.PhoneNumber))
-                user.PhoneNumber = dto.PhoneNumber;
+            user.PhoneNumber = dto.PhoneNumber;
+            latestMonitored.EntityName = dto.Company;
+            latestMonitored.Location = dto.Location;
 
             var result = await _userManager.UpdateAsync(user);
             if (!result.Succeeded)
                 return BadRequest(result.Errors);
+
+            _unitOfWork.Complete();
 
             return Ok(new { Message = "User updated successfully" });
         }
 
         #endregion
 
-        #region Delete
+        #region ChangePassword
 
-        [Authorize(Roles = SD.AdminRole)]
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(string id)
+        [Authorize]
+        [HttpPost("ChangePassword")]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto model)
         {
-            var user = await _userManager.FindByIdAsync(id);
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null)
+                return Unauthorized("User not found in token");
+
+            var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
-                return NotFound();
+                return NotFound("User not found");
 
-            var result = await _userManager.DeleteAsync(user);
-            if (!result.Succeeded)
-                return BadRequest(result.Errors);
+            var result = await _userManager.ChangePasswordAsync(user, model.CurrentPassword, model.NewPassword);
 
-            return Ok(new { Message = "User deleted successfully" });
+            if (result.Succeeded)
+                return Ok(new { message = "Password changed successfully" });
 
+            return BadRequest(result.Errors.Select(e => e.Description));
         }
 
         #endregion
-        
+
     }
 }

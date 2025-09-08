@@ -35,7 +35,7 @@ namespace PL.Controllers
             var monitoredFromDb = _unitOfWork.Repository<MonitoredEntity>()
                 .GetEntityWithSpec(new BaseSpecification<MonitoredEntity>(m => m.UserId == userId));
 
-            var cam = new Camera
+            var cam = new Camera()
             {
                 Host = dto.Host,
                 Port = dto.Port == 0 ? 554 : dto.Port,
