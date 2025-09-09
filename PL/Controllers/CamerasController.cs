@@ -35,6 +35,9 @@ namespace PL.Controllers
             var monitoredFromDb = _unitOfWork.Repository<MonitoredEntity>()
                 .GetEntityWithSpec(new BaseSpecification<MonitoredEntity>(m => m.UserId == userId));
 
+            if (monitoredFromDb == null)
+                return NotFound("No monitored entity found for this user.");
+
             var cam = new Camera()
             {
                 Host = dto.Host,

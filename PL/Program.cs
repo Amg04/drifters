@@ -123,7 +123,7 @@ namespace PL
                 {
                     c.SwaggerEndpoint("/swagger/v1/swagger.json", "Drifters API V1");
                     // "launchUrl": "swagger" ﬂœ… „‘  "launchUrl": "" ÷Ì› «·”ÿ— œ… ·Ê «· 
-                    //c.RoutePrefix = string.Empty;
+                    c.RoutePrefix = string.Empty;
                 });
             //}
 
@@ -152,7 +152,3 @@ namespace PL
         }
     }
 }
-
-//"CS": "Server=.;Database=Drifters;Integrated Security=True;Encrypt=True;TrustServerCertificate=True;MultipleActiveResultSets = True"
-
-//"Server=db26872.public.databaseasp.net;Database=db26872;User Id=db26872;Password=fN!5B=2g4a%X;Encrypt=False;MultipleActiveResultSets=True;"
