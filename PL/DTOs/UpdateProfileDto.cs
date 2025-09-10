@@ -5,8 +5,7 @@ namespace PL.DTOs
     public class UpdateProfileDto
     {
         public string? ImageUrl { get; set; }
-        [Required]
-        public string Role { get; set; }
+        public string? Role { get; set; }
         public string? Name { get; set; }
         [EmailAddress]
         [Required]

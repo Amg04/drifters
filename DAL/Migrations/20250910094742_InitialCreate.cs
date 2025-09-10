@@ -223,6 +223,8 @@ namespace DAL.Migrations
                     HlsLocalPath = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
                     Status = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false, defaultValue: "Unknown"),
                     LastHeartbeatUtc = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    Type = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    CriticalEvent = table.Column<int>(type: "int", nullable: false),
                     MonitoredEntityId = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
@@ -235,6 +237,35 @@ namespace DAL.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
+
+            migrationBuilder.CreateTable(
+                name: "CameraDetection",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    CameraId = table.Column<int>(type: "int", nullable: false),
+                    Status = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    Crowd_density = table.Column<float>(type: "real", nullable: false),
+                    Activity_type = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    Threshold = table.Column<float>(type: "real", nullable: false),
+                    Heatmap = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_CameraDetection", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_CameraDetection_Cameras_CameraId",
+                        column: x => x.CameraId,
+                        principalTable: "Cameras",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_CameraDetection_CameraId",
+                table: "CameraDetection",
+                column: "CameraId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Cameras_MonitoredEntityId",
@@ -311,7 +342,7 @@ namespace DAL.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "Cameras");
+                name: "CameraDetection");
 
             migrationBuilder.DropTable(
                 name: "RoleClaims",
@@ -334,11 +365,14 @@ namespace DAL.Migrations
                 schema: "Security");
 
             migrationBuilder.DropTable(
-                name: "MonitoredEntities");
+                name: "Cameras");
 
             migrationBuilder.DropTable(
                 name: "Roles",
                 schema: "Security");
+
+            migrationBuilder.DropTable(
+                name: "MonitoredEntities");
 
             migrationBuilder.DropTable(
                 name: "Users",

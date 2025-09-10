@@ -117,6 +117,9 @@ namespace DAL.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
+                    b.Property<int>("CriticalEvent")
+                        .HasColumnType("int");
+
                     b.Property<bool>("Enabled")
                         .HasColumnType("bit");
 
@@ -159,6 +162,11 @@ namespace DAL.Migrations
                         .HasColumnType("nvarchar(50)")
                         .HasDefaultValue("Unknown");
 
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<string>("Username")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -169,6 +177,45 @@ namespace DAL.Migrations
                     b.HasIndex("MonitoredEntityId");
 
                     b.ToTable("Cameras");
+                });
+
+            modelBuilder.Entity("DAL.Models.CameraDetection", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Activity_type")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("CameraId")
+                        .HasColumnType("int");
+
+                    b.Property<float>("Crowd_density")
+                        .HasColumnType("real");
+
+                    b.Property<string>("Heatmap")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<float>("Threshold")
+                        .HasColumnType("real");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CameraId");
+
+                    b.ToTable("CameraDetection");
                 });
 
             modelBuilder.Entity("DAL.Models.MonitoredEntity", b =>
@@ -361,6 +408,17 @@ namespace DAL.Migrations
                     b.Navigation("MonitoredEntity");
                 });
 
+            modelBuilder.Entity("DAL.Models.CameraDetection", b =>
+                {
+                    b.HasOne("DAL.Models.Camera", "Camera")
+                        .WithMany("CameraDetections")
+                        .HasForeignKey("CameraId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Camera");
+                });
+
             modelBuilder.Entity("DAL.Models.MonitoredEntity", b =>
                 {
                     b.HasOne("DAL.Models.AppUser", "User")
@@ -426,6 +484,11 @@ namespace DAL.Migrations
             modelBuilder.Entity("DAL.Models.AppUser", b =>
                 {
                     b.Navigation("Subordinates");
+                });
+
+            modelBuilder.Entity("DAL.Models.Camera", b =>
+                {
+                    b.Navigation("CameraDetections");
                 });
 
             modelBuilder.Entity("DAL.Models.MonitoredEntity", b =>

@@ -19,9 +19,9 @@ namespace PL.Controllers
 
         public UserController(UserManager<AppUser> userManager, IUnitOfWork unitOfWork, IWebHostEnvironment hostEnvironment)
         {
-            _userManager = userManager;
+           _userManager = userManager;
            _unitOfWork = unitOfWork;
-            this._hostEnvironment = hostEnvironment;
+           _hostEnvironment = hostEnvironment;
         }
 
         #region GetProfile

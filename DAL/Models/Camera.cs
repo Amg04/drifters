@@ -12,8 +12,11 @@
         public string? HlsPublicUrl { get; set; }         
         public string? HlsLocalPath { get; set; } // wwwroot
         public string Status { get; set; } = "Unknown";    // Online/Offline/Starting
-        public DateTime? LastHeartbeatUtc { get; set; }    
+        public DateTime? LastHeartbeatUtc { get; set; }
+        public string Type { get; set; } = "normal";  // normal or apnormal   
+        public int CriticalEvent { get; set; }
         public int MonitoredEntityId { get; set; } = default!;
         public MonitoredEntity MonitoredEntity { get; set; } = null!;
+        public ICollection<CameraDetection> CameraDetections { get; set; } = new HashSet<CameraDetection>();
     }
 }

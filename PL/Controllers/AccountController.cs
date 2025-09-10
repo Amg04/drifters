@@ -22,14 +22,12 @@ namespace PL.Controllers
         private readonly IConfiguration _configuration;
         private readonly SignInManager<AppUser> _signIn;
         private readonly IEmailSender _emailSender;
-        private readonly IUnitOfWork _unitOfWork;
 
         public AccountController(RoleManager<IdentityRole> roleManager,
             UserManager<AppUser> userManager,
             IConfiguration configuration,
             SignInManager<AppUser> SignIn,
-            IEmailSender emailSender,
-            IUnitOfWork unitOfWork
+            IEmailSender emailSender
             )
         {
             _roleManager = roleManager;
@@ -37,7 +35,6 @@ namespace PL.Controllers
             _configuration = configuration;
             _signIn = SignIn;
             _emailSender = emailSender;
-            _unitOfWork = unitOfWork;
         }
 
   
@@ -205,36 +202,126 @@ namespace PL.Controllers
         #region ResetPassword
 
         [HttpPost("ResetPassword")]
-        public async Task<IActionResult> ResetPassword(string Email)
+        public async Task<IActionResult> ResetPassword(string email)
         {
-            var user = await _userManager.FindByEmailAsync(Email);
+            var user = await _userManager.FindByEmailAsync(email);
             if (user == null)
-                return NotFound();
+                return NotFound(new { Message = "User not found." });
 
             var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var encodedToken = Uri.EscapeDataString(token);
 
-            var resetLink = Url.Action(nameof(ResetPasswordConfirm), "Account",
-                new { email = user.Email, token = token }, Request.Scheme);
+            var resetLink = Url.Action(nameof(ShowResetPasswordPage), "Account",
+                new { email = user.Email, token = encodedToken }, Request.Scheme);
+            
+                var emailBody = $@"
+                    <div style='font-family: Arial, sans-serif; font-size: 16px; color: #333;'>
+                        <p>To reset your password, please click the button below:</p>
+                        <a href='{resetLink}' 
+                           style='display: inline-block; padding: 12px 24px; margin: 20px 0; 
+                           font-size: 16px; color: white; background-color: #007bff; 
+                           text-decoration: none; border-radius: 5px;'>
+                           Reset Password
+                        </a>
+                        <p>If you did not request a password reset, please ignore this email.</p>
+                    </div>";
 
             if (user.Email != null)
-            {
-                var emailBody = $@"
-              <div style='font-family: Arial, sans-serif; font-size: 16px; color: #333;'>
-                <p>Please reset your password by clicking the button below:</p>
-                <a href='{resetLink}' 
-                   style='display: inline-block; padding: 12px 24px; margin: 20px 0; 
-                          font-size: 16px; color: white; background-color: #007bff; 
-                          text-decoration: none; border-radius: 5px;'>
-                     Reset Password
-                    </a>
-                    <p>If you did not request a password reset, please ignore this email.</p>
-                    </div>
-                ";
-
                 await _emailSender.SendEmailAsync(user.Email, "Reset Password", emailBody);
-            }
 
             return Ok(new { Message = "Password reset email sent. Please check your email." });
+        }
+
+
+        #endregion
+
+        #region ShowResetPasswordPage
+
+        [HttpGet("ShowResetPasswordPage")]
+        public IActionResult ShowResetPasswordPage(string email, string token)
+        {
+            string html = $@"
+                <html>
+                <head>
+                    <title>Reset Password</title>
+                    <style>
+                        body {{
+                            font-family: Arial, sans-serif;
+                            background-color: #f4f7fa;
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                            height: 100vh;
+                            margin: 0;
+                        }}
+                        .container {{
+                            background-color: white;
+                            padding: 30px 40px;
+                            border-radius: 8px;
+                            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                            max-width: 400px;
+                            width: 100%;
+                            box-sizing: border-box;
+                        }}
+                        h2 {{
+                            margin-bottom: 20px;
+                            color: #333;
+                            text-align: center;
+                        }}
+                        label {{
+                            display: block;
+                            margin-bottom: 6px;
+                            color: #555;
+                            font-weight: 600;
+                        }}
+                        input[type=password] {{
+                            width: 100%;
+                            padding: 10px;
+                            margin-bottom: 20px;
+                            border: 1px solid #ccc;
+                            border-radius: 4px;
+                            box-sizing: border-box;
+                            font-size: 14px;
+                            transition: border-color 0.3s ease;
+                        }}
+                        input[type=password]:focus {{
+                            border-color: #007bff;
+                            outline: none;
+                        }}
+                        button {{
+                            background-color: #007bff;
+                            color: white;
+                            padding: 12px;
+                            border: none;
+                            border-radius: 5px;
+                            width: 100%;
+                            font-size: 16px;
+                            cursor: pointer;
+                            transition: background-color 0.3s ease;
+                        }}
+                        button:hover {{
+                            background-color: #0056b3;
+                        }}
+                    </style>
+                </head>
+                <body>
+                    <div class='container'>
+                        <h2>Reset Your Password</h2>
+                        <form method='post' action='/api/Account/ResetPasswordConfirm'>
+                            <input type='hidden' name='Email' value='{email}' />
+                            <input type='hidden' name='Token' value='{token}' />
+                            <label>New Password:</label>
+                            <input type='password' name='Password' required minlength='6' />
+                            <label>Confirm Password:</label>
+                            <input type='password' name='ConfirmPassword' required minlength='6' />
+                            <button type='submit'>Reset Password</button>
+                        </form>
+                    </div>
+                </body>
+                </html>
+                ";
+
+            return Content(html, "text/html");
         }
 
         #endregion
@@ -242,15 +329,14 @@ namespace PL.Controllers
         #region ResetPasswordConfirm
 
         [HttpPost("ResetPasswordConfirm")]
-        public async Task<IActionResult> ResetPasswordConfirm([FromBody] ResetPasswordDTO model)
+        public async Task<IActionResult> ResetPasswordConfirm([FromForm] ResetPasswordDTO model)
         {
             var user = await _userManager.FindByEmailAsync(model.Email);
             if (user == null)
-            {
                 return NotFound(new { Message = "User not found." });
-            }
 
-            string decodedToken = System.Net.WebUtility.UrlDecode(model.Token);
+            var decodedToken = Uri.UnescapeDataString(model.Token);
+
             var resetPassResult = await _userManager.ResetPasswordAsync(user, decodedToken, model.Password);
             if (!resetPassResult.Succeeded)
             {
@@ -261,8 +347,53 @@ namespace PL.Controllers
                 return BadRequest(ModelState);
             }
 
-            return Ok(new { Message = "Password has been reset successfully." });
+            string html = @"
+                <html>
+                <head>
+                    <title>Password Reset Successful</title>
+                    <style>
+                        body {
+                            font-family: Arial, sans-serif;
+                            background-color: #e6f4ea;
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                            height: 100vh;
+                            margin: 0;
+                        }
+                        .message-box {
+                            background-color: #d4edda;
+                            border: 1px solid #c3e6cb;
+                            color: #155724;
+                            padding: 30px 40px;
+                            border-radius: 8px;
+                            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                            max-width: 400px;
+                            width: 100%;
+                            text-align: center;
+                            box-sizing: border-box;
+                        }
+                        h2 {
+                            margin-bottom: 20px;
+                        }
+                        p {
+                            font-size: 16px;
+                            line-height: 1.4;
+                            margin: 0;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class='message-box'>
+                        <h2>Password Has Been Reset Successfully!</h2>
+                        <p>Please log in on your mobile app with your new password.</p>
+                    </div>
+                </body>
+                </html>";
+
+            return Content(html, "text/html");
         }
+
 
         #endregion
     }

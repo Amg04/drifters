@@ -39,7 +39,11 @@ namespace DAL.Configrations
                    .HasDefaultValue("Unknown");
 
             builder.Property(c => c.LastHeartbeatUtc)
-                   .HasColumnType("datetime2");          
+                   .HasColumnType("datetime2");
+
+            builder.Property(c => c.Type)
+                 .IsRequired()
+                 .HasMaxLength(100);
 
             builder.Property(c => c.CameraLocation)
                   .IsRequired()

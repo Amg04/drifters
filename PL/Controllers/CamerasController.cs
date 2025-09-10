@@ -68,18 +68,34 @@ namespace PL.Controllers
         public IActionResult GetById(int id)
         {
             var cam = _unitOfWork.Repository<Camera>().Get(id);
-
             if (cam == null)
                 return NotFound();
 
             return Ok(new
             {
                 cam.Id,
-                cam.Username,
-                cam.Status,
                 cam.HlsPublicUrl,
-                cam.Enabled,
+                cam.Type,
+                cam.CameraLocation,
+                cam.Status,
             });
+        }
+
+        #endregion
+
+        #region QuickAction
+
+        [HttpPost("QuickAction")]
+        public IActionResult QuickAction(int id)
+        {
+            var cam = _unitOfWork.Repository<Camera>().Get(id);
+            if (cam == null)
+                return NotFound(new { Message = $"Camera with Id : {id} not found." });
+            cam.Type = "normal";
+            cam.CriticalEvent++;
+            _unitOfWork.Complete();
+
+            return Ok(new { Message = "Camera updated successfully." });
         }
 
         #endregion
