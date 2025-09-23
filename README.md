@@ -1,106 +1,73 @@
-# Camera Detection AI App
+# Drifters - Camera Management System
 
-A real-time AI-powered camera detection system built with .NET Core, implementing advanced computer vision capabilities for object detection and monitoring through RTSP camera streams.
+A .NET Core Web API for managing IP cameras and processing detection results. The system supports RTSP camera streams, user authentication, and real-time monitoring capabilities.
 
-## 🚀 Features
+## Features
 
-- **Real-time Object Detection**: Advanced AI model integration for live object detection
-- **RTSP Stream Support**: Connect to multiple IP cameras via RTSP protocol
-- **Repository Pattern**: Clean architecture with repository and unit of work patterns
-- **Background Processing**: Continuous frame processing with background services
-- **RESTful API**: Comprehensive REST API for camera and detection management
-- **Database Integration**: Entity Framework Core with SQL Server
-- **Real-time Updates**: SignalR integration for live detection updates
-- **Configurable Settings**: Camera-specific detection settings and zones
-- **Alert System**: Email, SMS, and webhook notifications
-- **Image Storage**: Automatic saving of detection images
-- **Analytics Dashboard**: Detection statistics and reporting
+- **User Management**: Registration, login, email confirmation, and password reset
+- **Camera Management**: Add, configure, and monitor IP cameras with RTSP support
+- **Stream Processing**: Support for both RTSP and HLS streaming protocols
+- **Role-based Access**: Manager and Observer roles with different permissions
+- **Site Management**: Onboarding system for managing monitored entities
+- **Detection Processing**: API endpoints for submitting and processing camera detection results
+- **Dashboard Analytics**: Basic statistics and camera status monitoring
 
-## 🏗️ Architecture
+## Technology Stack
 
-The application follows a clean 4-layer architecture pattern:
+- **.NET 8.0**: Web API framework
+- **Entity Framework Core**: ORM for data access
+- **ASP.NET Core Identity**: Authentication and authorization
+- **SQL Server**: Database
+- **JWT Authentication**: Token-based authentication
+- **Data Protection API**: Secure credential storage
+- **Email Services**: SMTP integration for notifications
+
+## Project Structure
 
 ```
 drifters/ (Solution Root)
 ├── BLL/                           
-│   ├── Dependencies/               
-│   ├── Interfaces/                  
-│   ├── Repositories/                
+│   ├── Dependencies/              
+│   ├── Interfaces/                
+│   ├── Repositories/             
 │   └── Specifications/            
-├── DAL/                         
-│   ├── Dependencies/            
-│   ├── Configurations/           
-│   ├── Data/                     
+├── DAL/                          
+│   ├── Dependencies/              
+│   ├── Configurations/            
+│   ├── Data/                    
 │   ├── DbInitializer/           
-│   ├── Migrations/              
-│   └── Models/              
-├── PL/                          
-│   ├── Connected Services/      
-│   ├── Dependencies/            
-│   ├── Properties/            
-│   ├── Controllers/            
-│   ├── DTOs/                   
-│   ├── Services/             
-│   ├── appsettings.json        
-│   ├── PL.http                 
-│   └── Program.cs              
-└── Utilities/                 
+│   ├── Migrations/               
+│   └── Models/                   
+├── PL/                           
+│   ├── Connected Services/        
+│   ├── Dependencies/              
+│   ├── Properties/               
+│   ├── Controllers/              
+│   ├── DTOs/                     
+│   ├── Email/                    
+│   ├── Hubs/                     
+│   ├── Services/                
+│   ├── wwwroot/                  
+│   ├── appsettings.json         
+│   ├── ImageHelper.cs           
+│   ├── PL.http                  
+│   └── Program.cs                
+└── Utilities/                    
 ```
 
-### Layer Responsibilities:
-
-**🎯 Presentation Layer (PL)**
-- REST API controllers and endpoints
-- HTTP request/response handling
-- Background services for camera processing
-- SignalR hubs for real-time updates
-- Authentication & authorization
-
-**💼 Business Logic Layer (BLL)**
-- Service interfaces and business rules
-- Repository pattern interfaces
-- Domain specifications and validation
-- Business workflows and orchestration
-
-**🗃️ Data Access Layer (DAL)**
-- Entity Framework DbContext
-- Entity configurations and mappings
-- Database migrations and seeding
-- Repository pattern implementations
-- Data models and relationships
-
-**🔧 Utilities**
-- Cross-cutting concerns
-- Extension methods and helpers
-- Constants and configurations
-- Mapping profiles (AutoMapper)
-
-## 🛠️ Technology Stack
-
-- **.NET 8.0**: Backend framework
-- **Entity Framework Core**: ORM for data access
-- **SQL Server**: Database
-- **ML.NET**: Machine learning framework
-- **OpenCV**: Computer vision library
-- **SignalR**: Real-time communication
-- **RTSP**: Real-Time Streaming Protocol for cameras
-- **Repository Pattern**: Data access abstraction
-- **Dependency Injection**: IoC container
-- **Background Services**: Continuous processing
-
-## 📋 Prerequisites
+## Prerequisites
 
 - .NET 8.0 SDK
 - SQL Server (LocalDB or full instance)
 - Visual Studio 2022 or VS Code
-- IP cameras with RTSP support (optional for testing)
 
-## 🚀 Getting Started
+## Getting Started
 
 ### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/Amg04/drifters.git
+cd drifters
 ```
 
 ### 2. Database Setup
@@ -110,85 +77,158 @@ Update the connection string in `appsettings.json`:
 ```json
 {
   "ConnectionStrings": {
-    "DefaultConnection": "Server=(localdb)\\mssqllocaldb;Database=CameraDetectionDB;Trusted_Connection=true;MultipleActiveResultSets=true"
+    "DefaultConnection": "Server=(localdb)\\mssqllocaldb;Database=DriftersDB;Trusted_Connection=true;MultipleActiveResultSets=true"
   }
 }
 ```
 
-### 3. Install Dependencies
+
+### 3. Install Dependencies and Run
 
 ```bash
 # Restore NuGet packages
 dotnet restore
 
-# Install Entity Framework tools
-dotnet tool install --global dotnet-ef
+# Apply database migrations
+dotnet ef database update
+
+# Run the application
+dotnet run --project PL
 ```
 
-
 The API will be available at:
-- HTTP: `http://localhost:7040`
 - HTTPS: `https://localhost:7040`
 - Swagger: `https://localhost:7040/swagger`
 
-## 📚 API Endpoints
+## API Endpoints
 
-### Cameras
-- `GET /api/cameras` - Get all cameras
-- `GET /api/cameras/{id}` - Get camera by ID
-- `POST /api/cameras` - Add new camera
-- `PUT /api/cameras/{id}` - Update camera
-- `DELETE /api/cameras/{id}` - Delete camera
-- `POST /api/cameras/{id}/toggle` - Enable/disable camera
+### Account Management
 
-### Detections
-- `GET /api/detections` - Get all detections
-- `GET /api/detections/camera/{cameraId}` - Get detections by camera
-- `GET /api/detections/{id}` - Get detection by ID
-- `GET /api/detections/stats` - Get detection statistics
-- `POST /api/detections/process-frame` - Process camera frame
+| Method | Endpoint | Description | Authorization |
+|--------|----------|-------------|---------------|
+| POST | `/api/Account/Register` | Register a new user | None |
+| GET | `/api/Account/ConfirmEmail` | Confirm user email address | None |
+| POST | `/api/Account/Login` | User login | None |
+| POST | `/api/Account/Logout` | User logout | Required |
+| POST | `/api/Account/ResetPassword` | Request password reset | None |
+| GET | `/api/Account/ShowResetPasswordPage` | Display password reset form | None |
+| POST | `/api/Account/ResetPasswordConfirm` | Confirm password reset | None |
 
-### Real-time Updates
-- SignalR Hub: `/detectionsHub`
-- Events: `DetectionUpdate`, `CameraStatusChanged`
+### Camera Management
 
-## 🎯 Usage Examples
+| Method | Endpoint | Description | Authorization |
+|--------|----------|-------------|---------------|
+| POST | `/api/Cameras` | Create a new camera | Manager Role |
+| GET | `/api/Cameras/{id}` | Get camera details by ID | Required |
+| POST | `/api/Cameras/QuickAction` | Perform quick action on camera | None |
+
+### Dashboard
+
+| Method | Endpoint | Description | Authorization |
+|--------|----------|-------------|---------------|
+| GET | `/api/Dashboard` | Get dashboard statistics and camera status | None |
+
+### Home/Streaming
+
+| Method | Endpoint | Description | Authorization |
+|--------|----------|-------------|---------------|
+| GET | `/api/Home/hls/{id}` | Get HLS stream URL for camera | Required |
+| GET | `/api/Home/LiveCamera` | Get all active HLS streams | Required |
+| POST | `/api/Home/CameraDetection` | Submit camera detection results | None |
+| GET | `/api/Home/rtsp/{id}` | Get RTSP stream URL for camera | None |
+| GET | `/api/Home/rtsp` | Get all active RTSP streams | None |
+
+### Onboarding
+
+| Method | Endpoint | Description | Authorization |
+|--------|----------|-------------|---------------|
+| GET | `/api/Onboarding/SiteSelection` | Get site selection data and user's existing sites | Required |
+| POST | `/api/Onboarding/SiteSelection` | Create or update monitored entity/site | Required |
+
+### User Management
+
+| Method | Endpoint | Description | Authorization |
+|--------|----------|-------------|---------------|
+| GET | `/api/User/Profile` | Get user profile information | Required |
+| PUT | `/api/User/profile` | Update user profile | Required |
+| POST | `/api/User/ChangePassword` | Change user password | Required |
+
+## Usage Examples
+
+### User Registration
+
+```bash
+curl -X POST "https://localhost:7040/api/Account/Register" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "userName": "testuser",
+    "password": "Password123!"
+  }'
+```
+
+### User Login
+
+```bash
+curl -X POST "https://localhost:7040/api/Account/Login" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userName": "testuser",
+    "password": "Password123!"
+  }'
+```
 
 ### Add a Camera
 
 ```bash
-curl -X POST "https://localhost:7040/api/cameras" \
+curl -X POST "https://localhost:7040/api/Cameras" \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d '{
-  "name": "cam1",
-  "host": "192.168.1.100",
-  "port": 443,
-  "username": "admin",
-  "passwordEnc": "Pass@123",
-  "rtspPath": "/rtsp",
-  "enabled": true
-}
+    "host": "192.168.1.100",
+    "port": 554,
+    "username": "admin",
+    "passwordEnc": "camera_password",
+    "rtspPath": "/stream1",
+    "enabled": true,
+    "cameraLocation": "Front Entrance"
   }'
 ```
 
-### Get Recent Detections
+### Submit Detection Results
 
 ```bash
-curl -X GET "https://localhost:5001/api/detections?take=10"
+curl -X POST "https://localhost:7040/api/Home/CameraDetection" \
+  -H "Content-Type: application/json" \
+  -d '[{
+    "cameraId": 1,
+    "status": "abnormal",
+    "crowd_density": 0.3,
+    "detectionTime": "2024-01-01T12:00:00Z"
+  }]'
 ```
 
-### Process Camera Frame
+## Authentication
 
-```bash
-curl -X POST "https://localhost:5001/api/detections/process-frame" \
-  -H "Content-Type: multipart/form-data" \
-  -F "cameraId=cam-001" \
-  -F "imageData=@frame.jpg"
+The API uses JWT (JSON Web Tokens) for authentication. Include the token in the Authorization header:
+
+```
+Authorization: Bearer YOUR_JWT_TOKEN
 ```
 
 
-# Generic IP Camera
-rtsp://username:password@192.168.1.100:554/stream1
+## User Roles
+- **Admin**: Can create cameras and manage observers ,add users and control 
+- **Manager**: Can create cameras and manage observers
+- **Observer**: Can view cameras and streams assigned by their manager
+
+## RTSP Camera Configuration
+
+The system supports various IP camera brands. Common RTSP URL formats:
+
+```
+# Generic format
+rtsp://username:password@camera_ip:554/path
 
 # Hikvision
 rtsp://admin:password@192.168.1.100:554/Streaming/Channels/101
@@ -197,82 +237,47 @@ rtsp://admin:password@192.168.1.100:554/Streaming/Channels/101
 rtsp://admin:password@192.168.1.100:554/cam/realmonitor?channel=1&subtype=0
 ```
 
-## 📊 Database Schema
+## Database Models
 
-### Cameras Table
-- `Id` (string, PK)
-- `Name` (string)
-- `StreamUrl` (string)
-- `IsActive` (bool)
+### Key Entities
 
+- **AppUser**: Extended Identity user with manager relationships
+- **MonitoredEntity**: Sites or locations being monitored
+- **Camera**: IP camera configurations and settings
+- **CameraDetection**: Detection results and alerts
 
-### Detections Table
-- `Id` (int, PK, Identity)
-- `CameraId` (string, FK)
-- `Description` (string)
+## Configuration
 
+### Email Service
 
-## 🔍 Monitoring & Logging
-
-The application uses structured logging with Serilog:
+Configure SMTP settings for email notifications:
 
 ```json
 {
-  "Serilog": {
-    "MinimumLevel": "Information",
-    "WriteTo": [
-      { "Name": "Console" },
-      { "Name": "File", "Args": { "path": "logs/app-.log" } }
-    ]
+  "EmailSettings": {
+    "SmtpServer": "smtp.gmail.com",
+    "Port": 587,
+    "SenderEmail": "your-email@gmail.com",
+    "SenderPassword": "your-app-password"
   }
 }
 ```
 
-## 🚀 Deployment
+### Data Protection
 
-### Docker Support
+The system uses ASP.NET Core Data Protection to encrypt camera passwords. Keys are automatically managed but can be configured for production environments.
 
-```dockerfile
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
-WORKDIR /app
-EXPOSE 80
+## Development
 
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
-WORKDIR /src
-COPY . .
-RUN dotnet restore
-RUN dotnet build -c Release -o /app/build
-
-FROM build AS publish
-RUN dotnet publish -c Release -o /app/publish
-
-FROM base AS final
-WORKDIR /app
-COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "CameraDetection.API.dll"]
-```
-
-### Azure Deployment
-
-1. Create Azure SQL Database
-2. Deploy to Azure App Service
-3. Configure Application Settings
-4. Set up Application Insights for monitoring
-
-## 🧪 Testing
+### Running Migrations
 
 ```bash
-# Run unit tests
-dotnet test
+# Add new migration
+dotnet ef migrations add MigrationName
 
-# Run with coverage
-dotnet test --collect:"XPlat Code Coverage"
+# Update database
+dotnet ef database update
+
+# Remove last migration
+dotnet ef migrations remove
 ```
-
-## 📈 Performance Optimization
-
-- **Frame Skipping**: Skip frames during high load
-- **GPU Acceleration**: CUDA support for AI inference
-- **Caching**: Redis for frequently accessed data
-- **Load Balancing**: Multiple API instances
-- **Database Indexing**: Optimized queries with proper indexes
