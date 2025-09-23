@@ -1,4 +1,4 @@
-﻿namespace PL
+﻿namespace PL.Helpers
 {
     public static class ImageHelper
     {
@@ -26,9 +26,9 @@
                 var webRootPath = hostEnvironment.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
                 var filePath = Path.Combine(webRootPath, "api", "uploads", Path.GetFileName(imageUrl));
 
-                if (System.IO.File.Exists(filePath))
+                if (File.Exists(filePath))
                 {
-                    System.IO.File.Delete(filePath);
+                    File.Delete(filePath);
                 }
             }
         }

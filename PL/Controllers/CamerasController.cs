@@ -26,28 +26,33 @@ namespace PL.Controllers
 
         [Authorize(Roles = SD.ManagerRole)]
         [HttpPost]
-        public IActionResult Create([FromBody] CreateCameraDto dto)
+        public IActionResult Create([FromBody] CreateEditCameraDto dto)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized();
+            
+            var spec = new BaseSpecification<MonitoredEntity>(m => m.UserId == userId);
+            spec.AddOrderByDescending(m => m.LastUpdate);
+            var latestMonitored = _unitOfWork.Repository<MonitoredEntity>().GetEntityWithSpec(spec);
 
-            var monitoredFromDb = _unitOfWork.Repository<MonitoredEntity>()
-                .GetEntityWithSpec(new BaseSpecification<MonitoredEntity>(m => m.UserId == userId));
 
-            if (monitoredFromDb == null)
+            if (latestMonitored == null)
                 return NotFound("No monitored entity found for this user.");
 
+            string? pwd = null;
+            if (!string.IsNullOrEmpty(dto.PasswordEnc))
+                pwd = _protector.Protect(dto.PasswordEnc);
             var cam = new Camera()
             {
                 Host = dto.Host,
                 Port = dto.Port == 0 ? 554 : dto.Port,
                 Username = dto.Username,
-                PasswordEnc = _protector.Protect(dto.PasswordEnc),
+                PasswordEnc = pwd,
                 RtspPath = dto.RtspPath,
                 Enabled = dto.Enabled,
                 CameraLocation = dto.CameraLocation,
-                MonitoredEntityId = monitoredFromDb.Id
+                MonitoredEntityId = latestMonitored.Id
             };
 
             _unitOfWork.Repository<Camera>().Add(cam);
@@ -56,7 +61,7 @@ namespace PL.Controllers
             // return from GetById => id only
             //return CreatedAtAction(nameof(GetById), new { id = cam.Id }, new { cam.Id });
             return CreatedAtAction(nameof(GetById), new { id = cam.Id }, 
-                new { cam.Id, cam.Username });
+                new { cam.Id });
         }
 
         #endregion
@@ -71,14 +76,58 @@ namespace PL.Controllers
             if (cam == null)
                 return NotFound();
 
+            var url = cam.HlsPublicUrl ?? cam.RtspPath;
             return Ok(new
             {
                 cam.Id,
-                cam.HlsPublicUrl,
+                url,
                 cam.Type,
                 cam.CameraLocation,
                 cam.Status,
             });
+        }
+
+        #endregion
+
+        #region Update (Edit)
+
+        [Authorize(Roles = SD.ManagerRole)]
+        [HttpPut("{id}")]
+        public IActionResult Edit(int id, [FromBody] CreateEditCameraDto dto)
+        {
+            var cam = _unitOfWork.Repository<Camera>().Get(id);
+            if (cam == null)
+                return NotFound(new { Message = $"Camera with Id {id} not found." });
+
+            cam.Host = dto.Host;
+            cam.Port = dto.Port == 0 ? 554 : dto.Port;
+            cam.Username = dto.Username;
+            cam.PasswordEnc = !string.IsNullOrEmpty(dto.PasswordEnc) ? _protector.Protect(dto.PasswordEnc) : null;
+            cam.RtspPath = dto.RtspPath;
+            cam.Enabled = dto.Enabled;
+            cam.CameraLocation = dto.CameraLocation;
+
+            _unitOfWork.Complete();
+
+            return Ok(new { Message = "Camera updated successfully.", cam.Id });
+        }
+
+        #endregion
+
+        #region Delete
+
+        [Authorize(Roles = SD.ManagerRole)]
+        [HttpDelete("{id}")]
+        public IActionResult Delete(int id)
+        {
+            var cam = _unitOfWork.Repository<Camera>().Get(id);
+            if (cam == null)
+                return NotFound(new { Message = $"Camera with Id {id} not found." });
+
+            _unitOfWork.Repository<Camera>().Delete(cam);
+            _unitOfWork.Complete();
+
+            return Ok(new { Message = "Camera deleted successfully.", cam.Id });
         }
 
         #endregion

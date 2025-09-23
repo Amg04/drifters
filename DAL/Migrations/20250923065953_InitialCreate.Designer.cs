@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DAL.Migrations
 {
     [DbContext(typeof(DriftersDBContext))]
-    [Migration("20250910094742_InitialCreate")]
+    [Migration("20250923065953_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -116,7 +116,6 @@ namespace DAL.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("CameraLocation")
-                        .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
@@ -135,7 +134,6 @@ namespace DAL.Migrations
                         .HasColumnType("nvarchar(500)");
 
                     b.Property<string>("Host")
-                        .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
@@ -146,7 +144,6 @@ namespace DAL.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("PasswordEnc")
-                        .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
@@ -171,7 +168,6 @@ namespace DAL.Migrations
                         .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("Username")
-                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 

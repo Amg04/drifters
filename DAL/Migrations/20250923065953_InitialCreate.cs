@@ -212,13 +212,13 @@ namespace DAL.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    Host = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    Host = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
                     Port = table.Column<int>(type: "int", nullable: false),
-                    Username = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    Username = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
                     RtspPath = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
-                    PasswordEnc = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    PasswordEnc = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
                     Enabled = table.Column<bool>(type: "bit", nullable: false),
-                    CameraLocation = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    CameraLocation = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
                     HlsPublicUrl = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
                     HlsLocalPath = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
                     Status = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false, defaultValue: "Unknown"),

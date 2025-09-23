@@ -86,13 +86,14 @@ namespace PL.Controllers
                 else
                     return BadRequest("Invalid EntityType value");
 
-                _unitOfWork.Repository<MonitoredEntity>().Add(obj);
-                _unitOfWork.Complete();
+                _unitOfWork.Repository<MonitoredEntity>().Add(obj);        
             }
             else
             {
                 monitoredFromDb.LastUpdate = DateTime.UtcNow;
             }
+            _unitOfWork.Complete();
+
             return Ok(new { Message = "Data received successfully" });
         }
 

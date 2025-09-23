@@ -2,13 +2,13 @@
 {
     public class Camera : BaseClass 
     {
-        public string Host { get; set; } = default!;       // IP or DNS             
+        public string? Host { get; set; }   // IP or DNS             
         public int Port { get; set; } = 554;
-        public string Username { get; set; } = default!;
+        public string? Username { get; set; } 
         public string RtspPath { get; set; } = default!;
-        public string PasswordEnc { get; set; } = default!; // Encryption
+        public string? PasswordEnc { get; set; } // Encryption
         public bool Enabled { get; set; } = true;
-        public string CameraLocation { get; set; } = default!;
+        public string? CameraLocation { get; set; } 
         public string? HlsPublicUrl { get; set; }         
         public string? HlsLocalPath { get; set; } // wwwroot
         public string Status { get; set; } = "Unknown";    // Online/Offline/Starting

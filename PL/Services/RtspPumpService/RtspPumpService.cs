@@ -18,7 +18,7 @@ namespace PL.Services.RtspPumpService
         private readonly IWebHostEnvironment _hostEnvironment;
         private readonly ConcurrentDictionary<int, Process> _procs = new();
 
-        public RtspPumpService(IServiceProvider sp,IRtspUrlBuilder urlBuilder
+        public RtspPumpService(IServiceProvider sp, IRtspUrlBuilder urlBuilder
             , IHubContext<CameraHub> hubContext, IWebHostEnvironment hostEnvironment)
         {
             _sp = sp;
@@ -62,29 +62,26 @@ namespace PL.Services.RtspPumpService
             {
                 using var scope = _sp.CreateScope();
                 var db = scope.ServiceProvider.GetRequiredService<DriftersDBContext>();
-                
+
                 var provider = scope.ServiceProvider.GetRequiredService<IDataProtectionProvider>();
                 var protector = provider.CreateProtector("purpose-string");
-
-
-
 
                 var cam = await db.Cameras
                     .Include(c => c.MonitoredEntity)
                     .FirstOrDefaultAsync(c => c.Id == cameraId, token);
 
-                if (cam == null || !cam.Enabled) return;
+                if (cam == null || !cam.Enabled || string.IsNullOrWhiteSpace(cam.Host)) return;
 
                 var webRootPath = _hostEnvironment.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
                 var outputDir = Path.Combine(webRootPath, "api", "streams", cam.Id.ToString());
                 Directory.CreateDirectory(outputDir);
                 var hlsFile = Path.Combine(outputDir, "index.m3u8");
                 cam.HlsLocalPath = hlsFile;
-                cam.HlsPublicUrl = $"/streams/{cam.Id}/index.m3u8"; 
+                cam.HlsPublicUrl = $"/streams/{cam.Id}/index.m3u8";
                 cam.Status = "Starting";
                 cam.LastHeartbeatUtc = DateTime.UtcNow;
                 await db.SaveChangesAsync(token);
-                
+
                 var managerUserId = cam.MonitoredEntity?.UserId;
                 if (managerUserId != null)
                 {
@@ -96,15 +93,17 @@ namespace PL.Services.RtspPumpService
                 {
                     await _hubContext.Clients.All.SendAsync("NewHlsStreamAvailable", new { cam.Id, cam.HlsPublicUrl });
                 }
-
-                var pwd = protector.Unprotect(cam.PasswordEnc);
+                string? pwd = null;
+                if (!string.IsNullOrEmpty(cam.PasswordEnc))
+                    pwd = protector.Unprotect(cam.PasswordEnc);
                 var rtsp = _urlBuilder.Build(cam, pwd);
 
                 var args =
                     $"-rtsp_transport tcp -i \"{rtsp}\" " +
-                    "-an -c:v copy " +
-                    "-f hls -hls_time 2 -hls_list_size 6 -hls_flags delete_segments+append_list " +
-                    "-master_pl_name master.m3u8 " +
+                    "-c:v copy -an " +
+                    "-f hls " +
+                    "-hls_time 2 -hls_list_size 6 -hls_flags delete_segments+append_list+discont_start " +
+                    $"-hls_segment_filename \"{outputDir}/segment_%03d.ts\" " +
                     $"\"{hlsFile}\"";
 
                 var psi = new ProcessStartInfo
@@ -124,18 +123,19 @@ namespace PL.Services.RtspPumpService
                 try
                 {
                     proc.Start();
-
                     _ = Task.Run(async () =>
                     {
+                        using StreamWriter logFile = new(Path.Combine(outputDir, "ffmpeg_error.log"), append: true);
                         while (!proc.StandardError.EndOfStream && !token.IsCancellationRequested)
                         {
                             var line = await proc.StandardError.ReadLineAsync();
                             if (string.IsNullOrWhiteSpace(line)) continue;
+                            await logFile.WriteLineAsync($"{DateTime.UtcNow}: {line}");
                         }
                     }, token);
 
-                    await WaitForFile(hlsFile, TimeSpan.FromSeconds(8), token);
-                    cam.Status = File.Exists(hlsFile) ? "Online" : "Starting";
+                    await WaitForFile(hlsFile, TimeSpan.FromSeconds(30), token);
+                    cam.Status = File.Exists(hlsFile) ? "Online" : "Offline";
                     cam.LastHeartbeatUtc = DateTime.UtcNow;
                     await db.SaveChangesAsync(token);
 
@@ -146,11 +146,13 @@ namespace PL.Services.RtspPumpService
                         await db.SaveChangesAsync(token);
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
                     cam.Status = "Offline";
                     cam.LastHeartbeatUtc = DateTime.UtcNow;
                     await db.SaveChangesAsync(token);
+                    var errorLogPath = Path.Combine(outputDir, "ffmpeg_exception.log");
+                    await File.AppendAllTextAsync(errorLogPath, $"{DateTime.UtcNow}: Exception - {ex.Message}{Environment.NewLine}{ex.StackTrace}");
                 }
                 finally
                 {
@@ -174,7 +176,7 @@ namespace PL.Services.RtspPumpService
 
         private static void TryKill(Process p)
         {
-            try { if (!p.HasExited) p.Kill(true); } catch {  }
+            try { if (!p.HasExited) p.Kill(true); } catch { }
         }
 
         public override Task StopAsync(CancellationToken cancellationToken)

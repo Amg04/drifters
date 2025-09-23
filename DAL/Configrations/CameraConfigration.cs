@@ -11,7 +11,6 @@ namespace DAL.Configrations
             builder.HasKey(c => c.Id);
 
             builder.Property(c => c.Host)
-                   .IsRequired()
                    .HasMaxLength(200);
 
             builder.Property(c => c.Port)
@@ -25,7 +24,6 @@ namespace DAL.Configrations
                    .HasMaxLength(500);
 
             builder.Property(c => c.PasswordEnc)
-                   .IsRequired()
                    .HasMaxLength(500);
 
             builder.Property(c => c.HlsPublicUrl)
@@ -46,7 +44,6 @@ namespace DAL.Configrations
                  .HasMaxLength(100);
 
             builder.Property(c => c.CameraLocation)
-                  .IsRequired()
                   .HasMaxLength(500);
 
             builder.Property(c => c.MonitoredEntityId)

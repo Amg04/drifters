@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using PL.DTOs;
+using PL.Helpers;
 using System.Security.Claims;
 
 namespace PL.Controllers
@@ -81,6 +82,9 @@ namespace PL.Controllers
             var spec = new BaseSpecification<MonitoredEntity>(m => m.UserId == user.Id);
             spec.AddOrderByDescending(m => m.LastUpdate);
             var latestMonitored = _unitOfWork.Repository<MonitoredEntity>().GetEntityWithSpec(spec);
+
+            if(latestMonitored == null)
+                return NotFound();
 
             user.Name = dto.Name;
             if (!string.IsNullOrEmpty(dto.Email))

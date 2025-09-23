@@ -46,14 +46,23 @@ namespace PL.Controllers
             if (cam == null || !cam.Enabled)
                 return NotFound();
 
-            if (string.IsNullOrEmpty(cam.HlsPublicUrl))
-                return Problem(
-                    statusCode: 503,
-                    title: "Stream not ready",
-                    detail: "The requested stream is currently not available."
-                );
+            string? url;
+            if(string.IsNullOrWhiteSpace(cam.Host)) // http not rtsp
+            {
+                url = cam.RtspPath;
+            }
+            else // rtsp
+            {
+                if (string.IsNullOrEmpty(cam.HlsPublicUrl))
+                    return Problem(
+                        statusCode: 503,
+                        title: "Stream not ready",
+                        detail: "The requested stream is currently not available."
+                    );
+                url = cam.HlsPublicUrl;
+            }
 
-            return Ok(new { url = cam.HlsPublicUrl });
+            return Ok(new { url = url});
         }
 
         #endregion
@@ -83,11 +92,12 @@ namespace PL.Controllers
             if (latestMonitored == null)
                 return NotFound("No monitored entity found.");
 
+           
             var cameraSpec = new BaseSpecification<Camera>
-              (cam => cam.MonitoredEntityId == latestMonitored.Id && cam.Enabled && !string.IsNullOrEmpty(cam.HlsPublicUrl));
+              (cam => cam.MonitoredEntityId == latestMonitored.Id && cam.Enabled );
           
             var cams = _unitOfWork.Repository<Camera>().GetAllWithSpec(cameraSpec)
-                .Select(cam => new { cam.Id, url = cam.HlsPublicUrl})
+                .Select(cam => new { cam.Id, url = cam.HlsPublicUrl ?? cam.RtspPath })
                 .ToList();
 
             if (!cams.Any())
@@ -146,10 +156,22 @@ namespace PL.Controllers
             if (cam == null)
                 return NotFound();
 
-            var pwd = _protector.Unprotect(cam.PasswordEnc);
-            var rtsp = _urlBuilder.Build(cam, pwd);
+            string? url;
+            if (string.IsNullOrWhiteSpace(cam.Host)) // http not rtsp
+            {
+                url = cam.RtspPath;
+            }
+            else // rtsp
+            {
+                string? pwd = null;
+                if (!string.IsNullOrEmpty(cam.PasswordEnc))
+                    pwd = _protector.Unprotect(cam.PasswordEnc);
+                var rtsp = _urlBuilder.Build(cam, pwd);
 
-            return Ok(new { url = rtsp });
+                url = rtsp;
+            }
+
+            return Ok(new { url = url });
         }
 
         #endregion
@@ -157,35 +179,23 @@ namespace PL.Controllers
         #region GetAllRtsp
 
         [HttpGet("rtsp")]
-        public async Task<IActionResult> GetAllRtspAsync()
+        public IActionResult GetAllRtsp()
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId))
-                return Unauthorized();
-
-            if (User.IsInRole(SD.ObserverRole))
-            {
-                var user = await _userManager.FindByIdAsync(userId);
-                if (user?.ManagerId == null)
-                    return NotFound("Observer has no manager assigned.");
-                userId = user?.ManagerId;
-            }
-
-            var spec = new BaseSpecification<MonitoredEntity>(m => m.UserId == userId);
-            spec.AddOrderByDescending(m => m.LastUpdate);
-            var latestMonitored = _unitOfWork.Repository<MonitoredEntity>().GetEntityWithSpec(spec);
-
-            if (latestMonitored == null)
-                return NotFound("No monitored entity found.");
-
-            var cameraSpec = new BaseSpecification<Camera>(cam => cam.MonitoredEntityId == latestMonitored.Id);
-            var cams = _unitOfWork.Repository<Camera>().GetAllWithSpec(cameraSpec)
+            var cams = _unitOfWork.Repository<Camera>().GetAll()
                 .Where(cam => cam.Enabled)
                 .Select(cam =>
                 {
-                    var pwd = _protector.Unprotect(cam.PasswordEnc);
-                    var rtspUrl = _urlBuilder.Build(cam, pwd);
-                    return new { cam.Id, url = rtspUrl };
+                    string? url;
+                    if (string.IsNullOrWhiteSpace(cam.Host))
+                    {
+                        url = cam.RtspPath;
+                    }
+                    else
+                    {
+                        string? pwd = !string.IsNullOrEmpty(cam.PasswordEnc) ? _protector.Unprotect(cam.PasswordEnc) : null;
+                        url = _urlBuilder.Build(cam, pwd);
+                    }
+                    return new { cam.Id, url = url };
                 })
                 .ToList();
 
@@ -199,7 +209,5 @@ namespace PL.Controllers
 
         #endregion
 
-        
-
-}
+    }
 }
