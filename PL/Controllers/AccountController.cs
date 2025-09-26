@@ -1,5 +1,4 @@
-﻿using BLLProject.Interfaces;
-using DAL.Models;
+﻿using DAL.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -37,7 +36,7 @@ namespace PL.Controllers
             _emailSender = emailSender;
         }
 
-  
+
         #region Register
 
         [HttpPost("Register")]
@@ -93,7 +92,7 @@ namespace PL.Controllers
             }
 
             var token = await _userManager.GenerateEmailConfirmationTokenAsync(appUser);
-            
+
             var confirmationLink = Url.Action(nameof(ConfirmEmail), "Account",
                 new { userId = appUser.Id, token = token }, Request.Scheme);
 
@@ -126,20 +125,30 @@ namespace PL.Controllers
         public async Task<IActionResult> ConfirmEmail(string userId, string token)
         {
             if (userId == null || token == null)
-                return BadRequest("Invalid Email confirmation request.");
+                return Content(GetHtmlPage("Invalid request", "Invalid email confirmation request."), "text/html");
 
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
-                return NotFound("User not found.");
+                return Content(GetHtmlPage("Not found", "User not found."), "text/html");
 
             var result = await _userManager.ConfirmEmailAsync(user, token);
             if (result.Succeeded)
-                return Ok("Email confirmed successfully. You can now log in.");
+            {
+                return Content(GetHtmlPage(
+                    "Email Confirmed",
+                    "Email confirmed successfully. You can now log in.",
+                    isSuccess: true
+                ), "text/html");
+            }
             else
-                return BadRequest("Email confirmation failed.");
+            {
+                return Content(GetHtmlPage("Failed", "Email confirmation failed. The token may be invalid or expired."), "text/html");
+            }
         }
 
         #endregion
+
+        
 
         #region Login
 
@@ -213,8 +222,8 @@ namespace PL.Controllers
 
             var resetLink = Url.Action(nameof(ShowResetPasswordPage), "Account",
                 new { email = user.Email, token = encodedToken }, Request.Scheme);
-            
-                var emailBody = $@"
+
+            var emailBody = $@"
                     <div style='font-family: Arial, sans-serif; font-size: 16px; color: #333;'>
                         <p>To reset your password, please click the button below:</p>
                         <a href='{resetLink}' 
@@ -393,6 +402,47 @@ namespace PL.Controllers
 
             return Content(html, "text/html");
         }
+
+
+        #endregion
+
+        #region method
+
+        private string GetHtmlPage(string title, string message, bool isSuccess = false)
+        {
+            return $@"<!doctype html>
+            <html lang=""en"">
+            <head>
+              <meta charset=""utf-8"">
+              <meta name=""viewport"" content=""width=device-width,initial-scale=1"">
+              <title>{EscapeHtml(title)}</title>
+              <style>
+                :root{{ --bg:#f4f7fb; --card:#ffffff; --success:#28a745; --danger:#dc3545; --muted:#6b7280; --accent:#2563eb; }}
+                body{{ margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue',Arial;
+                      background:linear-gradient(180deg,#eef2ff 0%,var(--bg) 100%);
+                      min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; }}
+                .card{{ background:var(--card); max-width:760px; width:100%; border-radius:12px;
+                        box-shadow:0 10px 30px rgba(16,24,40,0.08); padding:32px; text-align:center; }}
+                .icon{{ width:72px; height:72px; border-radius:50%; display:inline-grid; place-items:center;
+                        margin-bottom:16px; font-size:36px; color:white;
+                        background:{(isSuccess ? "linear-gradient(135deg,#34d399,#10b981)" : "linear-gradient(135deg,#f97316,#ef4444)")}; }}
+                h1{{ margin:0 0 8px 0; font-size:20px; }}
+                p{{ color:var(--muted); margin:0 0 20px 0; font-size:15px; }}
+                @media (max-width:480px){{ .card{{ padding:20px; }} }}
+              </style>
+            </head>
+            <body>
+              <div class=""card"" role=""main"">
+                <div class=""icon"" aria-hidden=""true"">{(isSuccess ? "✔" : "✖")}</div>
+                <h1>{EscapeHtml(title)}</h1>
+                <p>{EscapeHtml(message)}</p>
+              </div>
+            </body>
+            </html>";
+        }
+
+        private string EscapeHtml(string value) =>
+            System.Net.WebUtility.HtmlEncode(value ?? string.Empty);
 
 
         #endregion
